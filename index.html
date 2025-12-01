@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Exam Browser PHP Dasar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0f172a;
+            color: #e5e7eb;
+        }
+
+        .app {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .card {
+            background: #020617;
+            border-radius: 10px;
+            padding: 16px 20px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 10px 25px rgba(15,23,42,0.6);
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+            color: #f9fafb;
+        }
+
+        .muted {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #4b5563;
+            background: #020617;
+            color: #e5e7eb;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #38bdf8;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #22c55e;
+            color: #022c22;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #f9fafb;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .flex {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-4 { margin-top: 16px; }
+        .mt-6 { margin-top: 24px; }
+
+        .error {
+            color: #fecaca;
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            background: #111827;
+            border: 1px solid #4b5563;
+            color: #e5e7eb;
+        }
+
+        .badge-danger {
+            border-color: #f97316;
+            color: #fed7aa;
+        }
+
+        .question {
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #020617;
+            border: 1px solid #1e293b;
+        }
+
+        .question-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .options {
+            margin-top: 4px;
+        }
+
+        .options label {
+            font-weight: 400;
+            cursor: pointer;
+        }
+
+        .options input {
+            margin-right: 6px;
+        }
+
+        .divider {
+            margin: 16px 0;
+            border-top: 1px dashed #374151;
+        }
+
+        #debugPanel {
+            margin-top: 16px;
+            padding: 12px;
+            background: #020617;
+            border-radius: 8px;
+            border: 1px solid #4b5563;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.8rem;
+            max-height: 220px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .pill {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            border: 1px solid #4b5563;
+            background: #020617;
+        }
+
+        .pill-red {
+            border-color: #f97316;
+            color: #fed7aa;
+        }
+
+        .score-box {
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: #022c22;
+            color: #bbf7d0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+            .flex-between {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- LOGIN -->
+    <div id="loginCard" class="card">
+        <h1>Login Ujian Online</h1>
+        <p class="muted">
+            Mode aman aktif. Pindah tab atau keluar aplikasi akan tercatat di panel debug.
+        </p>
+
+        <div class="mt-3">
+            <label for="username">Username</label>
+            <input id="username" type="text" autocomplete="off" placeholder="contoh: siswa01">
+        </div>
+        <div class="mt-3">
+            <label for="password">Password</label>
+            <input id="password" type="password" autocomplete="off" placeholder="********">
+        </div>
+
+        <div class="mt-4 flex-between">
+            <button id="loginBtn" class="btn btn-primary">
+                Login &amp; Mulai Ujian
+            </button>
+            <span class="badge">
+                Demo kredensial:
+                <strong style="margin-left:4px;">siswa / 12345</strong>
+            </span>
+        </div>
+
+        <div id="loginError" class="error" style="display:none;"></div>
+    </div>
+
+    <!-- EXAM -->
+    <div id="examCard" class="card" style="display:none; margin-top:16px;">
+        <div class="flex-between">
+            <div>
+                <h2>Ujian PHP Dasar</h2>
+                <p class="muted" id="studentInfo"></p>
+            </div>
+            <div class="pill-row">
+                <span class="pill">
+                    Status integritas:
+                    <span id="integrityStatus">Normal</span>
+                </span>
+                <span class="pill pill-red">
+                    Pelanggaran:
+                    <span id="violationCount">0</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="questionContainer"></div>
+
+        <div class="divider"></div>
+
+        <div class="flex-between">
+            <div class="score-box" id="scoreBox" style="display:none;"></div>
+            <div class="flex" style="margin-left:auto;">
+                <button id="submitBtn" class="btn btn-primary">
+                    Kirim Jawaban
+                </button>
+                <button id="forceFinishBtn" class="btn btn-danger btn-sm">
+                    Paksa Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEBUG PANEL -->
+    <div id="debugCard" class="card" style="display:none; margin-top:16px;">
+        <div class="flex-between">
+            <h3>Debug &amp; Log Integritas</h3>
+            <button id="clearLogBtn" class="btn btn-sm">Clear Log</button>
+        </div>
+        <p class="muted">
+            Event yang tercatat: blur, focus, visibilitychange, resize, beforeunload, kombinasi tombol tertentu.
+        </p>
+        <div id="debugPanel"></div>
+    </div>
+</div>
+
+<script>
+    // =========================
+    // DATA SOAL (JSON)
+    // =========================
+    const QUESTIONS = [
+        {
+            id: 1,
+            question: "Tag pembuka kode PHP yang benar adalah?",
+            options: ["<php>", "<?", "<?php", "<script php>"],
+            answerIndex: 2
+        },
+        {
+            id: 2,
+            question: "Simbol yang digunakan untuk mendefinisikan variabel di PHP adalah?",
+            options: ["#", "$", "@", "&"],
+            answerIndex: 1
+        },
+        {
+            id: 3,
+            question: "Perintah untuk menampilkan teks ke layar di PHP adalah?",
+            options: ["print()", "echo", "show()", "display()"],
+            answerIndex: 1
+        },
+        {
+            id: 4,
+            question: "Komentar satu baris di PHP menggunakan?",
+            options: ["<!-- -->", "/* */", "//", "##"],
+            answerIndex: 2
+        },
+        {
+            id: 5,
+            question: "Tipe data untuk bilangan bulat di PHP adalah?",
+            options: ["float", "boolean", "integer", "string"],
+            answerIndex: 2
+        },
+        {
+            id: 6,
+            question: "Operator penggabung string di PHP adalah?",
+            options: ["+", ".", "*", "&"],
+            answerIndex: 1
+        },
+        {
+            id: 7,
+            question: "Superglobal untuk mengambil data form metode POST adalah?",
+            options: ["$_DATA", "$_POST", "$_FORM", "$_REQUEST"],
+            answerIndex: 1
+        },
+        {
+            id: 8,
+            question: "Fungsi untuk menghitung jumlah elemen array di PHP adalah?",
+            options: ["size()", "count()", "length()", "total()"],
+            answerIndex: 1
+        },
+        {
+            id: 9,
+            question: "Sintaks yang benar untuk struktur if di PHP adalah?",
+            options: ["if () {}", "if {}()", "if() {}", "if{}()"],
+            answerIndex: 2
+        },
+        {
+            id: 10,
+            question: "Perulangan yang biasa dipakai untuk mengulang array adalah?",
+            options: ["for", "while", "foreach", "loop"],
+            answerIndex: 2
+        },
+        {
+            id: 11,
+            question: "Fungsi untuk mengubah string menjadi huruf besar semua adalah?",
+            options: ["upper()", "strtoupper()", "toUpper()", "string_upper()"],
+            answerIndex: 1
+        },
+        {
+            id: 12,
+            question: "Ekstensi file yang umum untuk file PHP adalah?",
+            options: [".html", ".php", ".phtml", ".ph"],
+            answerIndex: 1
+        },
+        {
+            id: 13,
+            question: "Bagian akhir script PHP ditutup dengan?",
+            options: ["?>", "</php>", ";", "tidak wajib ditutup"],
+            answerIndex: 0
+        },
+        {
+            id: 14,
+            question: "Array asosiatif di PHP menggunakan?",
+            options: ["index angka saja", "key => value", "hanya string", "hanya integer"],
+            answerIndex: 1
+        },
+        {
+            id: 15,
+            question: "Fungsi untuk menyertakan file sekali saja di PHP adalah?",
+            options: ["include()", "require()", "include_once()", "require_all()"],
+            answerIndex: 2
+        },
+        {
+            id: 16,
+            question: "Operator perbandingan sama dengan di PHP adalah?",
+            options: ["=", "==", "===", ":="],
+            answerIndex: 1
+        },
+        {
+            id: 17,
+            question: "Konstanta di PHP didefinisikan dengan?",
+            options: ["const()", "define()", "constant()", "set_const()"],
+            answerIndex: 1
+        },
+        {
+            id: 18,
+            question: "Fungsi untuk menghitung panjang string di PHP adalah?",
+            options: ["strlen()", "count()", "size()", "len()"],
+            answerIndex: 0
+        },
+        {
+            id: 19,
+            question: "Fungsi yang benar untuk menghentikan eksekusi script PHP adalah?",
+            options: ["stop()", "exit()", "break()", "finish()"],
+            answerIndex: 1
+        },
+        {
+            id: 20,
+            question: "Superglobal yang menyimpan informasi server adalah?",
+            options: ["$_SERVER", "$_ENV", "$_POST", "$_SESSION"],
+            answerIndex: 0
+        },
+        {
+            id: 21,
+            question: "Perintah untuk mengalihkan ke halaman lain dengan header adalah?",
+            options: ["header('url:...')", "header('Location: ...')", "redirect(...)", "goto(...)"],
+            answerIndex: 1
+        },
+        {
+            id: 22,
+            question: "Fungsi untuk memulai sesi di PHP adalah?",
+            options: ["session_open()", "start_session()", "session_start()", "session_init()"],
+            answerIndex: 2
+        },
+        {
+            id: 23,
+            question: "Operator logika 'dan' di PHP adalah?",
+            options: ["&&", "||", "andor", "&|"],
+            answerIndex: 0
+        },
+        {
+            id: 24,
+            question: "Fungsi yang biasa digunakan untuk menghubungkan ke MySQL (gaya prosedural) adalah?",
+            options: ["mysqli_connect()", "mysql_connect()", "pdo_connect()", "db_connect()"],
+            answerIndex: 0
+        },
+        {
+            id: 25,
+            question: "Untuk mengecek isi variabel sudah diset atau belum digunakan fungsi?",
+            options: ["is_empty()", "isset()", "empty()", "isnull()"],
+            answerIndex: 1
+        },
+        {
+            id: 26,
+            question: "Fungsi untuk menghapus semua variabel sesi adalah?",
+            options: ["session_destroy()", "session_kill()", "session_clear()", "session_unset_all()"],
+            answerIndex: 0
+        },
+        {
+            id: 27,
+            question: "Simbol yang dipakai untuk operator modulus di PHP adalah?",
+            options: ["/", "%", "*", "mod"],
+            answerIndex: 1
+        },
+        {
+            id: 28,
+            question: "Tipe data yang hanya punya dua nilai true/false disebut?",
+            options: ["integer", "boolean", "string", "double"],
+            answerIndex: 1
+        },
+        {
+            id: 29,
+            question: "Fungsi yang mengurutkan array dari kecil ke besar adalah?",
+            options: ["sort()", "ksort()", "rsort()", "asort()"],
+            answerIndex: 0
+        },
+        {
+            id: 30,
+            question: "Sintaks switch yang benar di PHP adalah?",
+            options: ["switch { }", "switch() {}", "switch: {}", "switch[] {}"],
+            answerIndex: 1
+        },
+        {
+            id: 31,
+            question: "File konfigurasi PHP di server biasanya bernama?",
+            options: ["php.ini", "config.php", "php.conf", "ini.php"],
+            answerIndex: 0
+        },
+        {
+            id: 32,
+            question: "Fungsi untuk mengubah huruf string menjadi huruf kecil semua adalah?",
+            options: ["strtolower()", "lowercase()", "tolower()", "string_lower()"],
+            answerIndex: 0
+        },
+        {
+            id: 33,
+            question: "Operator penugasan penjumlahan di PHP adalah?",
+            options: ["=+", "+=", "++", "add="],
+            answerIndex: 1
+        },
+        {
+            id: 34,
+            question: "Untuk mengecek apakah variabel kosong biasanya digunakan fungsi?",
+            options: ["isnull()", "empty()", "isset()", "void()"],
+            answerIndex: 1
+        },
+        {
+            id: 35,
+            question: "Fungsi untuk mengambil tanggal saat ini di PHP adalah?",
+            options: ["now()", "today()", "date()", "time()"],
+            answerIndex: 2
+        },
+        {
+            id: 36,
+            question: "Superglobal untuk menyimpan data sesi adalah?",
+            options: ["$_COOKIE", "$_SESSION", "$_ENV", "$_POST"],
+            answerIndex: 1
+        },
+        {
+            id: 37,
+            question: "Untuk menghitung nilai maksimum dari sebuah array angka digunakan?",
+            options: ["max()", "highest()", "top()", "max_value()"],
+            answerIndex: 0
+        },
+        {
+            id: 38,
+            question: "Fungsi yang akan menampilkan tipe dan isi variabel secara detail adalah?",
+            options: ["print_r()", "echo()", "var_dump()", "debug()"],
+            answerIndex: 2
+        },
+        {
+            id: 39,
+            question: "Cara yang aman untuk memasukkan nilai ke query SQL disebut?",
+            options: ["string concat", "prepared statement", "dynamic sql", "random query"],
+            answerIndex: 1
+        },
+        {
+            id: 40,
+            question: "Fungsi bawaan PHP untuk mengenkripsi password secara standar adalah?",
+            options: ["md5()", "sha1()", "password_hash()", "encrypt()"],
+            answerIndex: 2
+        }
+    ];
+
+    // =========================
+    // ELEMEN DOM
+    // =========================
+    const loginCard = document.getElementById("loginCard");
+    const examCard = document.getElementById("examCard");
+    const debugCard = document.getElementById("debugCard");
+
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginError = document.getElementById("loginError");
+
+    const studentInfo = document.getElementById("studentInfo");
+    const questionContainer = document.getElementById("questionContainer");
+    const submitBtn = document.getElementById("submitBtn");
+    const forceFinishBtn = document.getElementById("forceFinishBtn");
+    const scoreBox = document.getElementById("scoreBox");
+
+    const integrityStatus = document.getElementById("integrityStatus");
+    const violationCountEl = document.getElementById("violationCount");
+
+    const debugPanel = document.getElementById("debugPanel");
+    const clearLogBtn = document.getElementById("clearLogBtn");
+
+    // =========================
+    // STATE
+    // =========================
+    let violationCount = 0;
+    let examLocked = false;
+    let userLoggedIn = null;
+
+    const VALID_USER = "siswa";
+    const VALID_PASS = "12345";
+
+    // =========================
+    // FUNGSI DEBUG / INTEGRITAS
+    // =========================
+    function logEvent(type, detail = "") {
+        const time = new Date().toLocaleTimeString();
+        const line = `[${time}] ${type}${detail ? " :: " + detail : ""}\n`;
+        debugPanel.textContent = line + debugPanel.textContent;
+    }
+
+    function addViolation(reason) {
+        violationCount++;
+        violationCountEl.textContent = violationCount.toString();
+        integrityStatus.textContent = "Terganggu";
+        integrityStatus.style.color = "#fed7aa";
+        logEvent("VIOLATION", reason);
+
+        if (violationCount >= 3 && !examLocked) {
+            examLocked = true;
+            logEvent("LOCK", "Ujian dikunci karena terlalu banyak pelanggaran");
+            alert("Ujian dikunci karena terlalu sering berpindah fokus / tab.");
+        }
+    }
+
+    function setupIntegrityGuards() {
+        // Blur & focus window
+        window.addEventListener("blur", () => {
+            logEvent("BLUR", "Window kehilangan fokus");
+            addViolation("Window blur");
+        });
+
+        window.addEventListener("focus", () => {
+            logEvent("FOCUS", "Window fokus kembali");
+        });
+
+        // Visibility change
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                logEvent("VISIBILITY", "Tab disembunyikan");
+                addViolation("Tab hidden (kemungkinan pindah tab / app)");
+            } else {
+                logEvent("VISIBILITY", "Tab kembali aktif");
+            }
+        });
+
+        // Resize tidak wajar (indikasi devtools / split screen)
+        let resizeTimer = null;
+        window.addEventListener("resize", () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                logEvent("RESIZE", `innerWidth=${window.innerWidth}, innerHeight=${window.innerHeight}`);
+            }, 300);
+        });
+
+        // Deteksi devtools kasar
+        setInterval(() => {
+            const widthDiff = window.outerWidth - window.innerWidth;
+            const heightDiff = window.outerHeight - window.innerHeight;
+            if (widthDiff > 160 || heightDiff > 160) {
+                logEvent("DEVTOOLS_HINT", `outer-inner diff: w=${widthDiff}, h=${heightDiff}`);
+            }
+        }, 4000);
+
+        // Cegah kombinasi tombol tertentu
+        window.addEventListener("keydown", (e) => {
+            const combo =
+                (e.ctrlKey && ["r", "R", "u", "U", "s", "S"].includes(e.key)) ||
+                e.key === "F5";
+
+            if (combo) {
+                e.preventDefault();
+                addViolation(`KeyBlock ${e.key}`);
+                logEvent("KEYBLOCK", `Blok shortcut ${e.key}`);
+            }
+        });
+
+        // beforeunload
+        window.addEventListener("beforeunload", (e) => {
+            logEvent("BEFOREUNLOAD", "User mencoba tutup / reload");
+            addViolation("beforeunload");
+            e.preventDefault();
+            e.returnValue = "";
+        });
+
+        logEvent("GUARD_INIT", "Integrity guard aktif");
+    }
+
+    // =========================
+    // RENDER SOAL
+    // =========================
+    function renderQuestions() {
+        questionContainer.innerHTML = "";
+        QUESTIONS.forEach((q, idx) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "question";
+
+            const title = document.createElement("div");
+            title.className = "question-title";
+            title.textContent = `${idx + 1}. ${q.question}`;
+            wrapper.appendChild(title);
+
+            const optionsDiv = document.createElement("div");
+            optionsDiv.className = "options";
+
+            q.options.forEach((opt, optIndex) => {
+                const id = `q${q.id}_opt${optIndex}`;
+
+                const label = document.createElement("label");
+                const input = document.createElement("input");
+                input.type = "radio";
+                input.name = `q${q.id}`;
+                input.value = optIndex;
+                input.id = id;
+
+                label.htmlFor = id;
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(opt));
+
+                optionsDiv.appendChild(label);
+            });
+
+            wrapper.appendChild(optionsDiv);
+            questionContainer.appendChild(wrapper);
+        });
+    }
+
+    function collectAnswers() {
+        const answers = {};
+        QUESTIONS.forEach(q => {
+            const radios = document.getElementsByName(`q${q.id}`);
+            let chosen = null;
+            for (let r of radios) {
+                if (r.checked) {
+                    chosen = parseInt(r.value, 10);
+                    break;
+                }
+            }
+            answers[q.id] = chosen;
+        });
+        return answers;
+    }
+
+    function gradeExam() {
+        const answers = collectAnswers();
+
+        let correct = 0;
+        let total = QUESTIONS.length;
+
+        QUESTIONS.forEach(q => {
+            if (answers[q.id] === q.answerIndex) {
+                correct++;
+            }
+        });
+
+        const score = Math.round((correct / total) * 100);
+        scoreBox.style.display = "block";
+        scoreBox.textContent = `Benar ${correct} dari ${total} soal. Nilai: ${score}`;
+
+        logEvent("SUBMIT", `Jawaban terkirim. Benar=${correct}/${total}, Nilai=${score}`);
+    }
+
+    // =========================
+    // LOGIN HANDLER
+    // =========================
+    loginBtn.addEventListener("click", () => {
+        const u = usernameInput.value.trim();
+        const p = passwordInput.value.trim();
+
+        if (!u || !p) {
+            loginError.style.display = "block";
+            loginError.textContent = "Username dan password wajib diisi.";
+            return;
+        }
+
+        if (u === VALID_USER && p === VALID_PASS) {
+            userLoggedIn = u;
+            loginError.style.display = "none";
+            logEvent("LOGIN_OK", `User=${u}`);
+            startExam();
+        } else {
+            loginError.style.display = "block";
+            loginError.textContent = "Username atau password salah.";
+            logEvent("LOGIN_FAIL", `User=${u}`);
+        }
+    });
+
+    function startExam() {
+        loginCard.style.display = "none";
+        examCard.style.display = "block";
+        debugCard.style.display = "block";
+
+        studentInfo.textContent = `Peserta: ${userLoggedIn} | Soal PHP dasar 1–40`;
+
+        renderQuestions();
+        setupIntegrityGuards();
+    }
+
+    // =========================
+    // TOMBOL AKSI
+    // =========================
+    submitBtn.addEventListener("click", () => {
+        if (examLocked) {
+            alert("Ujian sudah dikunci. Jawaban tidak bisa dikirim.");
+            return;
+        }
+        gradeExam();
+    });
+
+    forceFinishBtn.addEventListener("click", () => {
+        logEvent("FORCE_FINISH", "Ujian dipaksa selesai manual");
+        gradeExam();
+        examLocked = true;
+        alert("Ujian ditandai selesai.");
+    });
+
+    clearLogBtn.addEventListener("click", () => {
+        debugPanel.textContent = "";
+    });
+</script>
+</body>
+</html>
