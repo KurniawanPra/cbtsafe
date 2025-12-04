@@ -585,19 +585,39 @@
         debugPanel.textContent = line + debugPanel.textContent;
     }
 
-    function addViolation(reason) {
-        violationCount++;
-        violationCountEl.textContent = violationCount.toString();
-        integrityStatus.textContent = "Terganggu";
-        integrityStatus.style.color = "#fed7aa";
-        logEvent("VIOLATION", reason);
+function playBeep() {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-        if (violationCount >= 3 && !examLocked) {
-            examLocked = true;
-            logEvent("LOCK", "Ujian dikunci karena terlalu banyak pelanggaran");
-            alert("Ujian dikunci karena terlalu sering berpindah fokus / tab.");
-        }
+    osc.type = "sine";
+    osc.frequency.value = 900; // frekuensi beep
+    gain.gain.value = 2; // volume
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    setTimeout(() => osc.stop(), 200); // durasi 200ms
+}
+
+    function addViolation(reason) {
+    violationCount++;
+    violationCountEl.textContent = violationCount.toString();
+    integrityStatus.textContent = "Terganggu";
+    integrityStatus.style.color = "#fed7aa";
+
+    playBeep(); // bunyi setiap pelanggaran
+
+    logEvent("VIOLATION", reason);
+
+    if (violationCount >= 3 && !examLocked) {
+        examLocked = true;
+        logEvent("LOCK", "Ujian dikunci karena terlalu banyak pelanggaran");
+        playBeep(); // beep tambahan saat terkunci
+        alert("Ujian dikunci karena terlalu sering berpindah fokus atau tab.");
     }
+}
 
     function setupIntegrityGuards() {
         // Blur & focus window
