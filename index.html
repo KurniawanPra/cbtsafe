@@ -253,6 +253,10 @@
             </div>
             <div class="pill-row">
                 <span class="pill">
+        Status koneksi:
+        <span id="networkStatus">Online</span>
+                </span>
+                <span class="pill">
                     Status integritas:
                     <span id="integrityStatus">Normal</span>
                 </span>
@@ -781,11 +785,24 @@ function playBeep() {
         }
     });
 
+    function enterFullscreen() {
+    const el = document.documentElement;
+
+    if (el.requestFullscreen) {
+        el.requestFullscreen();
+    } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+    } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+    }
+    }
+    
     function startExam() {
         loginCard.style.display = "none";
         examCard.style.display = "block";
         debugCard.style.display = "block";
 
+        enterFullScreen();
         studentInfo.textContent = `Peserta: ${userLoggedIn} | Soal PHP dasar 1–40`;
 
         renderQuestions();
@@ -802,6 +819,11 @@ function playBeep() {
         }
         gradeExam();
     });
+    document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+    alert("Klik kanan dinonaktifkan selama ujian.");
+    logEvent("RIGHT_CLICK", "User mencoba klik kanan");
+});
 
     forceFinishBtn.addEventListener("click", () => {
         logEvent("FORCE_FINISH", "Ujian dipaksa selesai manual");
@@ -813,6 +835,25 @@ function playBeep() {
     clearLogBtn.addEventListener("click", () => {
         debugPanel.textContent = "";
     });
+    const networkStatus = document.getElementById("networkStatus");
+
+function updateNetworkStatus() {
+    if (navigator.onLine) {
+        networkStatus.textContent = "Online";
+        networkStatus.style.color = "#86efac";
+        logEvent("NETWORK", "Online");
+    } else {
+        networkStatus.textContent = "Offline";
+        networkStatus.style.color = "#fca5a5";
+        logEvent("NETWORK", "Offline");
+        alert("Koneksi internet terputus!");
+    }
+}
+
+window.addEventListener("online", updateNetworkStatus);
+window.addEventListener("offline", updateNetworkStatus);
+
+updateNetworkStatus();
 </script>
 </body>
 </html>
