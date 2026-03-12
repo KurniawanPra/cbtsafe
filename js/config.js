@@ -16,7 +16,7 @@ const CONFIG = {
 
     // ---- Nama Aplikasi ----
     namaAplikasi: "CBT SAFE – Ujian Online",
-    namaSekolah: "SMK Negeri 1",
+    namaSekolah: "SMK Bapak Budianto",
 
     // ---- Daftar Paket Soal yang Tersedia ----
     // Tambahkan paket baru di sini, pastikan file soal/KODE.js sudah dibuat
