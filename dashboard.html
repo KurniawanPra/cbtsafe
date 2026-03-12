@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard – CBT SAFE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="cbt-nav">
+  <div class="container-lg d-flex align-items-center justify-content-between">
+    <div class="nav-brand">
+      <div class="nav-icon"><i class="bi bi-shield-check"></i></div>
+      <div>
+        <div class="nav-brand-name">CBT SAFE</div>
+        <div class="nav-brand-sub" id="hdrSekolah"></div>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-none d-sm-block text-end">
+        <div class="nav-user-name" id="hdrNama">–</div>
+        <div class="nav-user-role">Peserta Ujian</div>
+      </div>
+      <!-- Trigger modal logout, bukan confirm() -->
+      <button id="logoutTrigger" class="btn-outline">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="d-none d-sm-inline">Logout</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Content -->
+<div class="container-lg py-4">
+
+  <div class="mb-4">
+    <p class="page-title">Halo, <span id="greetNama" style="color:var(--blue-600);">–</span> 👋</p>
+    <p class="page-sub">Pilih paket soal ujian yang ingin Anda kerjakan.</p>
+  </div>
+
+  <div class="info-banner mb-4">
+    <i class="bi bi-info-circle-fill mt-1 flex-shrink-0" style="color:var(--blue-500);font-size:1.05rem;"></i>
+    <span>
+      Setiap paket terdiri dari soal <strong>Pilihan Ganda</strong> dan <strong>Essay</strong>. Timer berjalan otomatis sejak ujian dimulai.
+      Sistem pengaman <strong>KIPS</strong> aktif — berpindah tab dihitung sebagai pelanggaran.
+      Essay dinilai secara manual oleh guru.
+    </span>
+  </div>
+
+  <div class="row g-3" id="paketGrid"></div>
+
+</div>
+
+<!-- Modal Logout -->
+<div class="modal fade" id="modalLogout" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content text-center">
+      <div class="modal-body py-4">
+        <div style="font-size:2.2rem;margin-bottom:12px;">👋</div>
+        <h6 style="font-weight:700;color:var(--navy);margin-bottom:6px;">Keluar dari CBT SAFE?</h6>
+        <p style="font-size:.85rem;color:var(--text-2);margin:0;">Sesi Anda akan dihapus. Pastikan tidak ada ujian yang sedang berjalan.</p>
+      </div>
+      <div class="modal-footer justify-content-center gap-2 py-3">
+        <button class="btn-outline" data-bs-dismiss="modal">Batal</button>
+        <button id="btnLogoutOk" class="btn-red" style="width:auto;">
+          <i class="bi bi-box-arrow-right"></i> Ya, Keluar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Pilih Paket -->
+<div class="modal fade" id="modalPaket" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-play-circle me-2" style="color:var(--blue-500);"></i>Mulai Ujian</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="cbt-inset p-3 mb-3">
+          <div class="paket-kode" id="mKode"></div>
+          <div class="paket-nama mb-1" id="mNama"></div>
+          <div class="paket-desc mb-0 small" id="mDesc"></div>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-4"><div class="stat-box"><div class="stat-val" id="mPG">40</div><div class="stat-lbl">Soal PG</div></div></div>
+          <div class="col-4"><div class="stat-box"><div class="stat-val" id="mEssay">5</div><div class="stat-lbl">Essay</div></div></div>
+          <div class="col-4"><div class="stat-box"><div class="stat-val" id="mDurasi">90</div><div class="stat-lbl">Menit</div></div></div>
+        </div>
+        <div class="kips-rule">
+          <i class="bi bi-shield-exclamation"></i>
+          <div class="kips-rule-text">Sistem pengaman <strong>KIPS</strong> aktif. Pindah tab atau blur window akan tercatat sebagai pelanggaran. Maksimal <strong>3× pelanggaran</strong>.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" data-bs-dismiss="modal">Batal</button>
+        <button id="btnMulai" class="btn-blue" style="width:auto;">
+          <i class="bi bi-play-fill"></i> Mulai Ujian
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
