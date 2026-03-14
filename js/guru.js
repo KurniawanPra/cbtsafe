@@ -793,13 +793,15 @@ function loadPenugasan() {
                             <input class="form-check-input" style="cursor:pointer;" type="checkbox" onchange="toggleTampilNilai('${data.id}', this.checked)" ${data.tampilNilai ? 'checked' : ''}>
                         </div>
                     </td>
-                    <td>
-                        <button class="btn btn-sm ${data.aktif ? 'btn-danger' : 'btn-success'}" onclick="toggleTugas('${data.id}', ${!data.aktif})">
-                            <i class="bi ${data.aktif ? 'bi-stop-circle' : 'bi-play-circle'}"></i> Set ${data.aktif ? 'Nonaktif' : 'Aktif'}
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTugas('${data.id}')"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
+                <td>
+                    <button class="btn btn-sm ${data.aktif ? 'btn-danger' : 'btn-success'} w-100" onclick="toggleTugas('${data.id}', ${!data.aktif})">
+                        <i class="bi ${data.aktif ? 'bi-stop-circle' : 'bi-play-circle'}"></i> Set ${data.aktif ? '  Off' : '  On'}
+                    </button>
+                </td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteTugas('${data.id}')"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
             `;
         });
         document.getElementById("tugasTableBody").innerHTML = html || `<tr><td colspan="6" class="text-center">Belum ada penugasan</td></tr>`;

@@ -230,6 +230,61 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1050;
+}
+
+/* Mobile Sidebar Toggle - Hidden by default */
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    color: var(--blue-600);
+}
+
+@media (max-width: 991.98px) {
+    .cbt-sidebar {
+        position: fixed;
+        transform: translateX(-100%);
+    }
+    .cbt-sidebar.show {
+        transform: translateX(0);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+    }
+    .layout-with-sidebar .sidebar-toggle {
+        display: flex;
+    }
+    .cbt-sidebar.show + .sidebar-toggle,
+    body.modal-open .sidebar-toggle,
+    body.swal2-shown .sidebar-toggle {
+        display: none !important;
+    }
+    .main-content {
+        padding-top: 4.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(2px);
+        z-index: 1040;
+    }
+    .sidebar-overlay.show {
+        display: block;
+    }
 }
 
 .cbt-sidebar-brand {
@@ -272,6 +327,14 @@ body {
   font-weight: 700 !important;
 }
 
+/* Sidebar Chevron Rotation */
+.cbt-sidebar-link[aria-expanded="true"] i.bi-chevron-down {
+    transform: rotate(180deg);
+}
+.cbt-sidebar-link i.bi-chevron-down {
+    transition: transform 0.2s ease-in-out;
+}
+
 /* Modal Scroll Fix Extension */
 .modal-dialog-scrollable .modal-content {
   max-height: 90vh; /* Prevent modal from taking 100% height and hiding footer */
@@ -290,6 +353,24 @@ body {
   padding: 2rem;
   overflow-y: auto;
   height: 100vh;
+  position: relative;
+}
+
+.main-content h3 {
+    font-weight: 700;
+    color: var(--gray-800);
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid var(--blue-600);
+    line-height: 1.2;
+}
+
+.main-content .text-muted {
+    padding-left: 1rem;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
 }
 
 /* --- List Card Kejar.id / Premium Edukasi Style --- */
@@ -556,18 +637,50 @@ body {
   color: white;
 }
 
+/* Table Responsive Mobile Force Scroll */
+@media (max-width: 991.98px) {
+    .table-responsive td, .table-responsive th {
+        white-space: nowrap !important;
+    }
+}
+
 /* =========================================================================
    5. RESPONSIVE UTILITIES
    ========================================================================= */
+@media (max-width: 992px) {
+  .navigasi-grid {
+    grid-template-columns: repeat(6, 1fr);
+    margin: 0 0.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .navigasi-grid {
     grid-template-columns: repeat(5, 1fr);
   }
+  .soal-container {
+    padding: 1.5rem;
+    margin: 1rem auto;
+  }
+  .soal-teks {
+    font-size: 1.05rem;
+  }
+  .opsi-label {
+    padding: 0.85rem;
+  }
+  .navigasi-inner {
+      padding: 0.5rem;
+  }
 }
+
 @media (max-width: 576px) {
   .navigasi-grid {
     grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
   }
+  .hero-content h1 { font-size: 1.8rem; }
+  .btn-nav-exam span { display: none; } /* Hide text on mobile nav buttons to save space */
+  .btn-nav-exam i { font-size: 1.5rem !important; margin: 0 !important; }
 }
 
 /* PREMIUM UI UTILITIES */

@@ -14,7 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-      <link rel="icon" href="img/logo.png" type="image/png">
+      <link rel="icon" href="../img/logo.png" type="image/png">
 </head>
 
 <body class="bg-light">
@@ -23,8 +23,8 @@
 
         <!-- SIDEBAR -->
         <aside class="cbt-sidebar">
-            <a href="#" class="cbt-sidebar-brand">
-                <i class="bi bi-journal-check me-2"></i> PPLG47 Guru
+            <a href="#" class="cbt-sidebar-brand text-decoration-none d-flex align-items-center">
+                <i class="bi bi-journal-check me-2"></i> <span>PPLG47 Guru</span>
             </a>
             <div class="cbt-sidebar-nav">
                 <a href="#" class="cbt-sidebar-link active" onclick="showPage('beranda', this)">
@@ -55,13 +55,20 @@
             </div>
         </aside>
 
+        <!-- Sidebar Toggle for Mobile (After sidebar for CSS sibling selector) -->
+        <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
         <!-- MAIN CONTENT -->
         <main class="main-content">
             <div class="container-fluid" style="max-width: 1100px;">
 
                 <!-- BERANDA -->
                 <div id="page-beranda" class="guru-page">
-                    <h3 class="mb-4">Beranda Guru PPLG47</h3>
+                    <h3 class="mb-1">Beranda Guru</h3>
+                    <p class="text-muted small">Kelola bank soal, penugasan, dan lihat hasil ujian siswa di sini.</p>
                     <div class="row mb-5">
                         <div class="col-md-4">
                             <div class="card shadow-sm border-0 mb-3">
@@ -632,6 +639,20 @@
     <script src="../js/firebase-config.js?v=4"></script>
     <script src="../js/auth.js?v=4"></script>
     <script src="../js/guru.js?v=4"></script>
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.cbt-sidebar').classList.toggle('show');
+            document.querySelector('.sidebar-overlay').classList.toggle('show');
+        }
+        
+        // Auto close sidebar on click (ONLY for direct links, NOT for collapse toggles)
+        document.querySelectorAll('.cbt-sidebar-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (link.hasAttribute('data-bs-toggle')) return;
+                if(window.innerWidth < 992) toggleSidebar();
+            });
+        });
+    </script>
 </body>
 
 </html>
