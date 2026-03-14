@@ -12,11 +12,11 @@ const CONFIG = {
     },
 
     // ---- Email Tujuan Guru ----
-    emailGuru: "ayamsaya85@gmail.com",
+    emailGuru: "[EMAIL_ADDRESS]",
 
     // ---- Nama Aplikasi ----
-    namaAplikasi: "CBT SAFE – Ujian Online",
-    namaSekolah: "SMK Bapak Budianto",
+    namaAplikasi: "PPLG47 – Ujian Online",
+    namaSekolah: "SMK PPLG47",
 
     // ---- Daftar Paket Soal yang Tersedia ----
     // Tambahkan paket baru di sini, pastikan file soal/KODE.js sudah dibuat

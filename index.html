@@ -3,88 +3,581 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login – CBT SAFE</title>
+  <title>Login – PPLG47</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link href="css/style.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --blue-500: #3b82f6;
+      --blue-700: #1d4ed8;
+      --slate-50:  #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-400: #94a3b8;
+      --slate-600: #475569;
+      --slate-900: #0f172a;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--slate-100);
+    }
+
+    /* ── WRAPPER ── */
+    .login-wrap {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════
+       LEFT PANEL
+    ══════════════════════════════ */
+    .login-left {
+      flex: 1.1;
+      position: relative;
+      overflow: hidden;
+      background: #1a2535 url('img/test.jpeg') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem 2rem;
+    }
+
+    /* Dark gradient overlay – makes photo dark & text readable */
+    .login-left::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        160deg,
+        rgba(15, 30, 55, 0.25) 0%,
+        rgba(10, 20, 45, 0.75) 50%,
+        rgba(5, 12, 30, 0.96) 100%
+      );
+      pointer-events: none;
+    }
+
+    .ll-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      max-width: 440px;
+      width: 100%;
+    }
+
+    /* Brand */
+    .ll-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    .ll-brandmark {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(97, 97, 97, 0.295);
+    }
+    .ll-brandmark img {
+      width: 50px;
+      object-fit: contain;
+      display: block;
+    }
+    .ll-brandname {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #fff;
+    }
+
+    /* Bottom content */
+    .ll-content { width: 100%; }
+
+    .ll-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 20px;
+      padding: 4px 13px;
+      margin-bottom: 1.25rem;
+    }
+
+    .ll-headline {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(28px, 3vw, 40px);
+      font-weight: 300;
+      line-height: 1.2;
+      color: #f8fafc;
+      margin: 0 0 1rem;
+      letter-spacing: -0.01em;
+    }
+    
+    .ll-headline em {
+      font-style: italic;
+      color: #93c5fd;
+    }
+
+    .ll-desc {
+      font-size: 14px;
+      line-height: 1.85;
+      color: rgba(255, 255, 255, 0.5);
+      margin: 0 0 2.2rem;
+      max-width: 360px;
+    }
+
+    .ll-stats {
+      display: flex;
+      gap: 0;
+    }
+    .ll-stat {
+      padding-right: 2rem;
+      margin-right: 2rem;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .ll-stat:last-child {
+      border-right: none;
+      padding-right: 0;
+      margin-right: 0;
+    }
+    .ll-stat-num {
+      font-family: 'Fraunces', serif;
+      font-size: 28px;
+      font-weight: 300;
+      color: #fff;
+      line-height: 1;
+    }
+    .ll-stat-lbl {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* ══════════════════════════════
+       RIGHT PANEL
+    ══════════════════════════════ */
+    .login-right {
+      width: 480px;
+      min-width: 420px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 3rem;
+    }
+
+    .login-form-wrap {
+      width: 100%;
+      max-width: 340px;
+    }
+
+    /* Mobile-only brand */
+    .lr-mobile-brand {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 2rem;
+    }
+
+    .lf-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue-500);
+      margin: 0 0 .6rem;
+    }
+
+    .lf-title {
+      font-family: 'Fraunces', serif;
+      font-size: 30px;
+      font-weight: 300;
+      color: var(--slate-900);
+      margin: 0 0 .35rem;
+      line-height: 1.2;
+    }
+
+    .lf-sub {
+      font-size: 14px;
+      color: var(--slate-400);
+      margin: 0 0 2.2rem;
+    }
+
+    /* Form elements */
+    .lf-label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #374151;
+      margin-bottom: 7px;
+    }
+
+    .lf-input {
+      width: 100%;
+      height: 46px;
+      border: 1.5px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 15px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--slate-900);
+      background: var(--slate-50);
+      outline: none;
+      transition: border-color .18s, background .18s, box-shadow .18s;
+    }
+    .lf-input:focus {
+      border-color: var(--blue-500);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+    .lf-input::placeholder { color: #cbd5e1; }
+
+    .lf-group { margin-bottom: 1.25rem; }
+
+    .lf-pw-wrap { position: relative; }
+    .lf-pw-wrap .lf-input { padding-right: 48px; }
+    .lf-toggle-pw {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--slate-400);
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+    .lf-toggle-pw:hover { color: var(--slate-600); }
+
+    /* Alert */
+    .lf-alert {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #dc2626;
+      margin-bottom: 1rem;
+    }
+    .lf-alert.visible { display: flex; }
+
+    /* Submit button */
+    .lf-btn {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-700) 100%);
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: .4rem;
+      transition: opacity .18s, transform .12s, box-shadow .18s;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+    }
+    .lf-btn:hover {
+      opacity: .92;
+      box-shadow: 0 6px 22px rgba(59, 130, 246, 0.38);
+      transform: translateY(-1px);
+    }
+    .lf-btn:active { transform: scale(.98); box-shadow: none; }
+    .lf-btn:disabled { opacity: .7; cursor: not-allowed; transform: none; }
+
+    .lf-footer {
+      text-align: center;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-top: 2.2rem;
+    }
+
+    /* ══════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════ */
+    @media (max-width: 900px) {
+      .login-left { display: none !important; }
+      .login-right { width: 100%; min-width: 0; }
+      .lr-mobile-brand { display: flex; }
+    }
+  </style>
 </head>
 <body>
 
 <div class="login-wrap">
-  <div class="login-box">
-    <div class="cbt-card p-4 p-md-5">
 
-      <div class="brand-logo">
-        <img src="img/logo.png" alt="Logo" style="width: 50px;">
+  <!-- ── LEFT PANEL ── -->
+  <div class="login-left d-none d-lg-flex">
+    <div class="ll-inner">
+
+      <!-- Brand centered -->
+      <div class="ll-brand">
+        <div class="ll-brandmark">
+          <img src="img/logo.png" alt="Logo PPLG47">
+        </div>
+        <span class="ll-brandname">PPLG47</span>
       </div>
 
-      <h1 class="login-title">CBT SAFE</h1>
-      <p class="login-sub">
-        <span id="namaAplikasi">Sistem Ujian Online</span><br>
-        <strong id="namaSekolah" style="color:var(--blue-600);"></strong>
-      </p>
-
-      <form id="loginForm" novalidate>
-        <div class="mb-4">
-          <label for="inputNama" class="form-label">
-            <i class="bi bi-person me-1" style="color:var(--blue-500);"></i>
-            Nama Lengkap
-          </label>
-          <input
-            type="text"
-            id="inputNama"
-            class="cbt-input"
-            placeholder="Contoh: Budi Santoso"
-            autocomplete="name"
-            autofocus
-          >
+      <!-- Bottom content -->
+      <div class="ll-content">
+        <span class="ll-tag">Platform CBT</span>
+        <h1 class="ll-headline">
+          Asesmen digital<br>yang <em>lebih cerdas</em><br>untuk sekolah.
+        </h1>
+        <p class="ll-desc">
+          Sistem Computer Based Test terpadu dengan deteksi kecurangan otomatis
+          dan analisis hasil real-time.
+        </p>
+        <div class="ll-stats">
+          <div class="ll-stat">
+            <div class="ll-stat-num">500+</div>
+            <div class="ll-stat-lbl">Sekolah</div>
+          </div>
+          <div class="ll-stat">
+            <div class="ll-stat-num">99%</div>
+            <div class="ll-stat-lbl">Akurasi</div>
+          </div>
+          <div class="ll-stat">
+            <div class="ll-stat-num">24/7</div>
+            <div class="ll-stat-lbl">Dukungan</div>
+          </div>
         </div>
-
-        <div id="loginAlert" class="alert alert-danger d-none mb-3 py-2 px-3">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          <span id="loginAlertMsg"></span>
-        </div>
-
-        <button type="submit" class="btn-blue">
-          <i class="bi bi-box-arrow-in-right"></i>
-          Masuk ke Dashboard
-        </button>
-      </form>
-
-      <div class="sec-badges">
-        <span class="sec-badge"><i class="bi bi-shield-lock-fill"></i> KIPS Aktif</span>
-        <span class="sec-badge"><i class="bi bi-eye-slash-fill"></i> Anti-Cheat</span>
-        <span class="sec-badge"><i class="bi bi-wifi"></i> Online Monitor</span>
       </div>
 
     </div>
   </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+
+      <!-- Mobile brand (hidden on desktop) -->
+      <div class="lr-mobile-brand d-lg-none">
+        <div class="ll-brandmark">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 9L7.5 13.5L15 4.5" stroke="#fff" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span style="font-size:15px; font-weight:700; color:var(--blue-700); letter-spacing:.04em;">PPLG47</span>
+      </div>
+
+      <p class="lf-eyebrow">Selamat datang</p>
+      <h2 class="lf-title">Masuk untuk<br>memulai</h2>
+      <p class="lf-sub">Silakan masukkan username dan password Anda.</p>
+
+      <form id="loginForm" novalidate>
+
+        <div class="lf-group">
+          <label class="lf-label" for="inputUsername">Username</label>
+          <input class="lf-input" type="text" id="inputUsername"
+            placeholder="Ketik username" required autofocus>
+        </div>
+
+        <div class="lf-group">
+          <label class="lf-label" for="inputPassword">Password</label>
+          <div class="lf-pw-wrap">
+            <input class="lf-input" type="password" id="inputPassword"
+              placeholder="Ketik password" required>
+            <button class="lf-toggle-pw" type="button" id="togglePassword">
+              <svg id="iconPassword" width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Alert error -->
+        <div id="loginAlert" class="lf-alert" role="alert">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="loginAlertMsg"></span>
+        </div>
+
+        <button type="submit" class="lf-btn" id="btnSubmit">Masuk</button>
+
+      </form>
+
+      <div class="lf-footer">&copy; 2026 PPLG47 Team</div>
+    </div>
+  </div>
+
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/app.js"></script>
+<!-- Modal Setup Admin -->
+<div class="modal fade" id="modalInit" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Setup Admin Pertama Kali</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-danger">Pastikan Anda sudah mengkonfigurasi
+          <code>js/firebase-config.js</code> dengan kredensial Firebase Anda.</p>
+        <div class="mb-2">
+          <label>Email Admin</label>
+          <input type="email" id="initEmail" class="form-control" value="admin@cbtsafe.com">
+        </div>
+        <div class="mb-2">
+          <label>Password</label>
+          <input type="text" id="initPassword" class="form-control" value="Admin123">
+        </div>
+        <div class="mb-2">
+          <label>Username</label>
+          <input type="text" id="initUsername" class="form-control" value="admin">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btnBuatAdmin">Buat Akun Admin</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/firebase-config.js?v=3"></script>
+<script src="js/auth.js?v=3"></script>
 <script>
-  document.getElementById("namaAplikasi").textContent = CONFIG.namaAplikasi || "Sistem Ujian Online";
-  document.getElementById("namaSekolah").textContent = CONFIG.namaSekolah || "";
+  checkAuth();
 
-  redirectIfLoggedIn("dashboard.html");
+  // Toggle password visibility
+  document.getElementById('togglePassword').addEventListener('click', function () {
+    const pwd = document.getElementById('inputPassword');
+    const icon = document.getElementById('iconPassword');
+    const isHidden = pwd.type === 'password';
+    pwd.type = isHidden ? 'text' : 'password';
+    icon.innerHTML = isHidden
+      ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+         <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+         <line x1="1" y1="1" x2="23" y2="23"/>`
+      : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  });
 
-  document.getElementById("loginForm").addEventListener("submit", function(e) {
+  // Handle login submit
+  document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
-    const nama = document.getElementById("inputNama").value.trim();
-    const alertEl = document.getElementById("loginAlert");
-    const alertMsg = document.getElementById("loginAlertMsg");
+    const alertEl  = document.getElementById('loginAlert');
+    const alertMsg = document.getElementById('loginAlertMsg');
+    const btnSubmit = document.getElementById('btnSubmit');
 
-    if (!nama || nama.length < 2) {
-      alertEl.classList.remove("d-none");
-      alertMsg.textContent = "Masukkan nama lengkap Anda (minimal 2 karakter).";
-      document.getElementById("inputNama").focus();
+    const username = document.getElementById('inputUsername').value.trim();
+    const password = document.getElementById('inputPassword').value;
+
+    if (!username || !password) {
+      alertEl.classList.add('visible');
+      alertMsg.textContent = 'Username dan password harus diisi.';
       return;
     }
 
-    alertEl.classList.add("d-none");
-    setSession({ nama: nama, waktuLogin: new Date().toISOString() });
-    window.location.href = "dashboard.html";
+    try {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML =
+        `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Memproses...`;
+      alertEl.classList.remove('visible');
+
+      let email = '';
+      try {
+        const userQuery = await db.collection('users')
+          .where('username', '==', username).limit(1).get();
+        if (userQuery.empty) throw new Error('Username tidak ditemukan.');
+        email = userQuery.docs[0].data().email;
+      } catch (firestoreError) {
+        if (firestoreError.code === 'permission-denied') {
+          throw new Error(
+            'Akses Database Ditolak! Pastikan Rules Firestore Anda diset ke ' +
+            '\'allow read, write: if true;\' (Mode Uji Coba) di console Firebase.'
+          );
+        }
+        throw firestoreError;
+      }
+
+      await firebase.auth().signInWithEmailAndPassword(email, password);
+
+    } catch (error) {
+      alertEl.classList.add('visible');
+      if (error.code === 'auth/wrong-password' || error.message === 'Username tidak ditemukan.') {
+        alertMsg.textContent = 'Username atau password salah.';
+      } else if (error.code === 'auth/user-not-found') {
+        alertMsg.textContent = 'Akun tidak ditemukan (email tidak terdaftar).';
+      } else if (error.code === 'auth/too-many-requests') {
+        alertMsg.textContent = 'Terlalu banyak percobaan gagal. Coba sesaat lagi.';
+      } else if (error.message.includes('Akses Database Ditolak')) {
+        alertMsg.innerHTML =
+          '<strong>Error Security Rules:</strong> Ubah Firestore Rules menjadi ' +
+          '<code>allow read, write: if true;</code>';
+      } else {
+        alertMsg.textContent = 'Gagal login: ' + error.message;
+      }
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Masuk';
+    }
+  });
+
+  // Setup admin modal
+  const modalInit = new bootstrap.Modal(document.getElementById('modalInit'));
+  function showInitModal() { modalInit.show(); }
+
+  document.getElementById('btnBuatAdmin').addEventListener('click', async () => {
+    const email = document.getElementById('initEmail').value;
+    const pwd   = document.getElementById('initPassword').value;
+    const usr   = document.getElementById('initUsername').value;
+    try {
+      const uc = await firebase.auth().createUserWithEmailAndPassword(email, pwd);
+      await db.collection('users').doc(uc.user.uid).set({
+        nama: 'Administrator', username: usr, email,
+        role: 'admin',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      alert('Admin berhasil dibuat!');
+      modalInit.hide();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   });
 </script>
 </body>
