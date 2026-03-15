@@ -2,6 +2,19 @@
 // UJIAN.JS - Exam Engine
 // ============================================================
 
+// --- CEGAH TOMBOL BACK BROWSER ---
+history.pushState(null, null, location.href);
+window.addEventListener('popstate', function () {
+    history.pushState(null, null, location.href);
+    if(typeof Swal !== 'undefined') {
+        Swal.fire({
+            toast: true, position: 'top', icon: 'warning',
+            title: 'Tombol kembali dinonaktifkan saat ujian!',
+            showConfirmButton: false, timer: 3000
+        });
+    }
+});
+
 let examData = null; // dari sessionStorage
 let bankData = null; // dari firestore
 let soalList = []; // array of {tipe, idAsli, teks, opsi, jawabanAsli}
