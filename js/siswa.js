@@ -120,11 +120,11 @@ function loadTugas() {
     container.innerHTML = `<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Mencari tugas...</p></div>`;
 
     // 1. Ambil Penugasan Aktif sesuai Semester & Jenis
-    db.collection("penugasan")
-        .where("aktif", "==", true)
-        .where("semester", "==", sem)
-        .where("jenis", "==", jns)
-        .get().then(async (tugasSnap) => {
+    let query = db.collection("penugasan").where("aktif", "==", true);
+    if (sem !== "all") query = query.where("semester", "==", sem);
+    if (jns !== "all") query = query.where("jenis", "==", jns);
+
+    query.get().then(async (tugasSnap) => {
             
             if(tugasSnap.empty) {
                 container.innerHTML = `<div class="col-12 text-center text-muted mt-5"><i class="bi bi-x-circle fs-1"></i><p class="mt-2">Tidak ada penugasan aktif untuk filter ini.</p></div>`;

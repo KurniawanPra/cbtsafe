@@ -106,8 +106,8 @@
                             <div class="row align-items-end">
                                 <div class="col-md-6 mb-3 mb-md-0">
                                     <label class="form-label text-muted small fw-bold">Semester</label>
-                                    <select class="form-select border-primary" id="filterSemester"
-                                        onchange="loadTugas()">
+                                    <select class="form-select border-primary" id="filterSemester" onchange="loadTugas()">
+                                        <option value="all" selected>Semua Semester</option>
                                         <option value="ganjil">Semester Ganjil</option>
                                         <option value="genap">Semester Genap</option>
                                     </select>
@@ -115,6 +115,7 @@
                                 <div class="col-md-6 mb-3 mb-md-0">
                                     <label class="form-label text-muted small fw-bold">Jenis Ujian</label>
                                     <select class="form-select border-primary" id="filterJenis" onchange="loadTugas()">
+                                        <option value="all" selected>Semua Jenis Ujian</option>
                                         <option value="uts">Ujian Tengah Semester (UTS)</option>
                                         <option value="uas">Ujian Akhir Semester (UAS)</option>
                                         <option value="harian">Ulangan Harian</option>
