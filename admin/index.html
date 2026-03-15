@@ -22,6 +22,34 @@
 
 <body class="bg-light">
 
+    <!-- Mobile Topbar (hanya tampil di mobile) -->
+    <nav class="d-lg-none sticky-top bg-white border-bottom shadow-sm px-3 py-2 d-flex align-items-center justify-content-between" style="z-index:1040;">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-light border-0 p-1" onclick="toggleSidebar()">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+            <span class="fw-bold text-primary" style="font-size:0.95rem;">
+                <i class="bi bi-shield-check me-1"></i> PPLG47 Admin
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-dark fw-medium small d-none d-sm-inline" id="adminNameMobile">...</span>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light border-0 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle fs-5 text-secondary"></i>
+                    <i class="bi bi-chevron-down" style="font-size:0.65rem;color:#94a3b8;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-1">
+                    <li><h6 class="dropdown-header" id="adminNameDropdown">Admin</h6></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger fw-bold" href="#" onclick="logoutWithSwal()">
+                        <i class="bi bi-box-arrow-right me-2"></i>Keluar
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="layout-with-sidebar">
 
         <!-- SIDEBAR -->
@@ -72,11 +100,9 @@
             </div>
         </aside>
 
-        <!-- Sidebar Toggle for Mobile (After sidebar for CSS sibling selector) -->
-        <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
-            <i class="bi bi-list fs-4"></i>
-        </button>
+        <!-- Sidebar Toggle overlay -->
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
 
         <!-- MAIN CONTENT -->
         <main class="main-content">
@@ -116,34 +142,47 @@
 
                 <!-- DATA SISWA -->
                 <div id="page-siswa" class="admin-page d-none">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3>Data Siswa</h3>
-                        <div>
-                            <button class="btn btn-success me-2" onclick="showImportSiswaModal()">
-                                <i class="bi bi-file-earmark-excel"></i> Import Excel
+                    <!-- Header -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <h3 class="mb-0">Data Siswa</h3>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-danger btn-sm" onclick="deleteAllSiswa()">
+                                <i class="bi bi-trash3 me-1"></i> Hapus Semua
                             </button>
-                            <button class="btn btn-primary" onclick="showUserModal('siswa')">
-                                <i class="bi bi-plus-lg"></i> Tambah Siswa
+                            <button class="btn btn-success btn-sm" onclick="showImportSiswaModal()">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Import Excel
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="showUserModal('siswa')">
+                                <i class="bi bi-plus-lg me-1"></i> Tambah Siswa
                             </button>
                         </div>
                     </div>
 
+                    <!-- Filter Bar -->
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <select id="siswaKelasFilter" class="form-select form-select-sm" style="max-width:220px;" onchange="setSiswaFilter(this.value)">
+                            <option value="">Semua Kelas</option>
+                        </select>
+                        <span class="badge bg-secondary-subtle text-secondary border" id="siswaFilterCount">0 siswa</span>
+                    </div>
+
                     <div class="card shadow-sm border-0">
-                        <div class="card-body">
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>Nama Lengkap</th>
                                             <th>NIS</th>
                                             <th>Kelas / Rombel</th>
                                             <th>L/P</th>
+                                            <th>Email</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="siswaTableBody">
                                         <tr>
-                                            <td colspan="5" class="text-center">Memuat data...</td>
+                                            <td colspan="6" class="text-center">Memuat data...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -246,11 +285,19 @@
 
                 <!-- MANAJEMEN ROMBEL -->
                 <div id="page-rombel" class="admin-page d-none">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3>Manajemen Rombel (Kelas)</h3>
-                        <button class="btn btn-primary" onclick="showRombelModal()">
-                            <i class="bi bi-plus-lg"></i> Tambah Rombel
-                        </button>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                        <div>
+                            <h3 class="mb-0">Manajemen Rombel (Kelas)</h3>
+                            <small class="text-muted">Kelola kelas dan wali kelas. Hapus rombel akan menghapus siswa terkait.</small>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-outline-success btn-sm" onclick="sinkronisasiRombel()">
+                                <i class="bi bi-arrow-repeat me-1"></i> Sinkronisasi Siswa
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="showRombelModal()">
+                                <i class="bi bi-plus-lg"></i> Tambah Rombel
+                            </button>
+                        </div>
                     </div>
 
                     <div class="card shadow-sm border-0">

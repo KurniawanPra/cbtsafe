@@ -19,6 +19,37 @@
 
 <body class="bg-light">
 
+    <!-- Mobile Topbar (hanya tampil di mobile) -->
+    <nav class="d-lg-none sticky-top bg-white border-bottom shadow-sm px-3 py-2 d-flex align-items-center justify-content-between" style="z-index:1040;">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-light border-0 p-1" onclick="toggleSidebar()">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+            <span class="fw-bold text-primary" style="font-size:0.95rem;">
+                <i class="bi bi-journal-check me-1"></i> PPLG47 Guru
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-dark fw-medium small d-none d-sm-inline" id="guruNameMobile">...</span>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light border-0 d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle fs-5 text-secondary"></i>
+                    <i class="bi bi-chevron-down" style="font-size:0.65rem;color:#94a3b8;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-1">
+                    <li><h6 class="dropdown-header" id="guruNameDropdown">Guru</h6></li>
+                    <li><a class="dropdown-item" href="#" onclick="showChangePasswordModalGuru()">
+                        <i class="bi bi-lock me-2 text-primary"></i>Ganti Password
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger fw-bold" href="#" onclick="logoutWithSwal()">
+                        <i class="bi bi-box-arrow-right me-2"></i>Keluar
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="layout-with-sidebar">
 
         <!-- SIDEBAR -->
@@ -68,11 +99,9 @@
             </div>
         </aside>
 
-        <!-- Sidebar Toggle for Mobile (After sidebar for CSS sibling selector) -->
-        <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
-            <i class="bi bi-list fs-4"></i>
-        </button>
+        <!-- Sidebar Toggle overlay -->
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
 
         <!-- MAIN CONTENT -->
         <main class="main-content">

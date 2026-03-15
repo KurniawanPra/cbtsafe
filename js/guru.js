@@ -13,7 +13,14 @@ let rombelNames = {}; // Global Map: ID -> Nama
 document.addEventListener("DOMContentLoaded", () => {
     checkAuth("guru");
     const user = getUserLocal();
-    if(user) document.getElementById("guruName").textContent = user.nama;
+    if(user) {
+        document.getElementById("guruName").textContent = user.nama;
+        // Topbar mobile
+        const mob = document.getElementById("guruNameMobile");
+        if(mob) mob.textContent = user.nama;
+        const drop = document.getElementById("guruNameDropdown");
+        if(drop) drop.textContent = user.nama;
+    }
 
     const elBank = document.getElementById('modalBank');
     if(elBank) mBank = new bootstrap.Modal(elBank);

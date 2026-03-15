@@ -7,7 +7,14 @@ let mSiswa, mGuru, mAdmin, mRombel, mImport;
 document.addEventListener("DOMContentLoaded", () => {
     checkAuth("admin");
     const user = getUserLocal();
-    if(user) document.getElementById("adminName").textContent = user.nama;
+    if(user) {
+        document.getElementById("adminName").textContent = user.nama;
+        // Mobile topbar
+        const mob = document.getElementById("adminNameMobile");
+        if(mob) mob.textContent = user.nama;
+        const drop = document.getElementById("adminNameDropdown");
+        if(drop) drop.textContent = user.nama;
+    }
 
     mSiswa = new bootstrap.Modal(document.getElementById('modalSiswa'));
     mGuru = new bootstrap.Modal(document.getElementById('modalGuru'));
@@ -91,85 +98,215 @@ let siswaList = [];
 let guruListObj = [];
 let adminList = [];
 
+// ---- Generic Sort Utility ----
+const sortState = { siswa: { col:'nama', dir:'asc' }, guru: { col:'nama', dir:'asc' }, admin: { col:'nama', dir:'asc' }, rombel: { col:'nama', dir:'asc' } };
+
+function sortList(arr, col, dir) {
+    return [...arr].sort((a, b) => {
+        const av = String(a[col] || '').toLowerCase();
+        const bv = String(b[col] || '').toLowerCase();
+        return dir === 'asc' ? av.localeCompare(bv, 'id') : bv.localeCompare(av, 'id');
+    });
+}
+
+function sortIcon(table, col) {
+    const s = sortState[table];
+    if(s.col !== col) return '<i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:0.7rem"></i>';
+    return s.dir === 'asc'
+        ? '<i class="bi bi-sort-alpha-down text-primary ms-1" style="font-size:0.7rem"></i>'
+        : '<i class="bi bi-sort-alpha-up text-primary ms-1" style="font-size:0.7rem"></i>';
+}
+
+function toggleSort(table, col, renderFn) {
+    const s = sortState[table];
+    if(s.col === col) s.dir = s.dir === 'asc' ? 'desc' : 'asc';
+    else { s.col = col; s.dir = 'asc'; }
+    renderFn();
+}
+
 // -- SISWA --
-function loadSiswa() {
-    document.getElementById("siswaTableBody").innerHTML = `<tr><td colspan="5" class="text-center">Memuat data...</td></tr>`;
+let siswaFilterKelas = '';
+
+function renderSiswaTable(list) {
+    const filtered = siswaFilterKelas
+        ? list.filter(s => (s.rombelId || '') === siswaFilterKelas || (s.rombelNama || '').toLowerCase() === siswaFilterKelas.toLowerCase())
+        : list;
+
+    const sorted = sortList(filtered, sortState.siswa.col, sortState.siswa.dir);
+
+    let html = '';
+    sorted.forEach(data => {
+        html += `
+            <tr>
+                <td>${data.nama}</td>
+                <td>${data.nis || '<span class="badge bg-light text-muted border">Tidak ada NIS</span>'}</td>
+                <td><span class="badge ${data.rombelId ? 'bg-primary' : 'bg-secondary'}">${data.rombelNama || 'Belum Diatur'}</span></td>
+                <td>${data.jenisKelamin || '-'}</td>
+                <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editSiswa('${data.id}')"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'siswa')"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+    const tbody = document.getElementById("siswaTableBody");
+    tbody.innerHTML = html || `<tr><td colspan="6" class="text-center text-muted py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        ${ siswaFilterKelas ? 'Tidak ada siswa di kelas ini' : 'Tidak ada data siswa'}
+    </td></tr>`;
+
+    // Update sort header icons
+    const thNama = document.getElementById('siswaTh_nama');
+    if(thNama) thNama.innerHTML = `Nama Lengkap ${sortIcon('siswa','nama')}`;
+
+    // Update counter
+    document.getElementById("siswaFilterCount").textContent = `${filtered.length} siswa`;
+}
+
+function loadSiswa(keepFilter = false) {
+    if(!keepFilter) siswaFilterKelas = '';
+    document.getElementById("siswaTableBody").innerHTML = `<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Memuat...</td></tr>`;
+
+    // Populate filter dropdown
+    populateRombelSelects().then(() => {
+        const filterSel = document.getElementById("siswaKelasFilter");
+        if(filterSel && rombelList.length) {
+            filterSel.innerHTML = '<option value="">Semua Kelas</option>'
+                + rombelList.map(r => `<option value="${r.id}">${r.nama}</option>`).join('');
+            if(siswaFilterKelas) filterSel.value = siswaFilterKelas;
+        }
+    });
+
     db.collection("users").where("role", "==", "siswa").get().then((snapshot) => {
         siswaList = [];
-        let html = '';
         snapshot.forEach(doc => {
             const data = doc.data();
             data.id = doc.id;
             siswaList.push(data);
-            html += `
-                <tr>
-                    <td>${data.nama}</td>
-                    <td>${data.nis || '<span class="badge bg-light text-muted border">Tidak ada NIS</span>'}</td>
-                    <td><span class="badge bg-secondary">${data.rombelNama || 'Belum Diatur'}</span></td>
-                    <td>${data.jenisKelamin || '-'}</td>
-                    <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editSiswa('${data.id}')"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'siswa')"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            `;
         });
-        document.getElementById("siswaTableBody").innerHTML = html || '<tr><td colspan="5" class="text-center">Tidak ada data siswa</td></tr>';
+        renderSiswaTable(siswaList);
     });
 }
 
+function setSiswaFilter(val) {
+    siswaFilterKelas = val;
+    renderSiswaTable(siswaList);
+}
+
+async function deleteAllSiswa() {
+    const total = siswaFilterKelas
+        ? siswaList.filter(s => (s.rombelId || '') === siswaFilterKelas).length
+        : siswaList.length;
+    const label = siswaFilterKelas
+        ? rombelList.find(r => r.id === siswaFilterKelas)?.nama || 'kelas terpilih'
+        : 'SEMUA KELAS';
+
+    const res = await Swal.fire({
+        title: 'Hapus Semua Siswa?',
+        html: `<div class="text-start">
+            <p>Ini akan menghapus <b>${total} siswa</b> dari <b>${label}</b>.</p>
+            <div class="alert alert-danger p-2" style="font-size:0.85rem;">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i> Aksi ini <b>tidak dapat dibatalkan!</b>
+            </div>
+            <p class="mb-1">Ketik <b>HAPUS</b> untuk konfirmasi:</p>
+            <input id="confirmHapus" class="form-control" placeholder="HAPUS">
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Hapus Sekarang',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+            if(document.getElementById('confirmHapus').value !== 'HAPUS') {
+                Swal.showValidationMessage('Ketik HAPUS dengan huruf kapital!');
+                return false;
+            }
+        }
+    });
+    if(!res.isConfirmed) return;
+
+    try {
+        const toDelete = siswaFilterKelas
+            ? siswaList.filter(s => (s.rombelId || '') === siswaFilterKelas)
+            : siswaList;
+
+        // Batch delete in chunks of 490
+        for(let i = 0; i < toDelete.length; i += 490) {
+            const batch = db.batch();
+            toDelete.slice(i, i+490).forEach(s => batch.delete(db.collection('users').doc(s.id)));
+            await batch.commit();
+        }
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success',
+            title: `${toDelete.length} siswa dihapus`, showConfirmButton: false, timer: 2000 });
+        loadSiswa();
+    } catch(err) {
+        Swal.fire('Gagal', err.message, 'error');
+    }
+}
+
+
 // -- GURU --
+function renderGuruTable() {
+    const sorted = sortList(guruListObj, sortState.guru.col, sortState.guru.dir);
+    let html = '';
+    sorted.forEach(data => {
+        html += `
+            <tr>
+                <td>${data.nama}</td>
+                <td><span class="badge bg-secondary">${data.rombelNama || 'Bukan Wali'}</span></td>
+                <td>${data.jenisKelamin || '-'}</td>
+                <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editGuru('${data.id}')"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'guru')"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+    document.getElementById("guruTableBody").innerHTML = html || '<tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Tidak ada data guru</td></tr>';
+    const th = document.getElementById('guruTh_nama');
+    if(th) th.innerHTML = `Nama Lengkap ${sortIcon('guru','nama')}`;
+}
+
 function loadGuru() {
-    document.getElementById("guruTableBody").innerHTML = `<tr><td colspan="5" class="text-center">Memuat data...</td></tr>`;
+    document.getElementById("guruTableBody").innerHTML = `<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Memuat...</td></tr>`;
     db.collection("users").where("role", "==", "guru").get().then((snapshot) => {
         guruListObj = [];
-        let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            data.id = doc.id;
-            guruListObj.push(data);
-            html += `
-                <tr>
-                    <td>${data.nama}</td>
-                    <td><span class="badge bg-secondary">${data.rombelNama || 'Bukan Wali'}</span></td>
-                    <td>${data.jenisKelamin || '-'}</td>
-                    <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editGuru('${data.id}')"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'guru')"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
-        document.getElementById("guruTableBody").innerHTML = html || '<tr><td colspan="5" class="text-center">Tidak ada data guru</td></tr>';
+        snapshot.forEach(doc => { const d = doc.data(); d.id = doc.id; guruListObj.push(d); });
+        renderGuruTable();
     });
 }
 
 // -- ADMIN --
+function renderAdminTable() {
+    const sorted = sortList(adminList, sortState.admin.col, sortState.admin.dir);
+    let html = '';
+    sorted.forEach(data => {
+        html += `
+            <tr>
+                <td>${data.nama}</td>
+                <td>${data.username}</td>
+                <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
+                <td>${data.jenisKelamin || '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editAdmin('${data.id}')"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'admin')"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+    document.getElementById("adminTableBody").innerHTML = html || '<tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Tidak ada data admin</td></tr>';
+    const th = document.getElementById('adminTh_nama');
+    if(th) th.innerHTML = `Nama Lengkap ${sortIcon('admin','nama')}`;
+}
+
 function loadAdmin() {
-    document.getElementById("adminTableBody").innerHTML = `<tr><td colspan="5" class="text-center">Memuat data...</td></tr>`;
+    document.getElementById("adminTableBody").innerHTML = `<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Memuat...</td></tr>`;
     db.collection("users").where("role", "==", "admin").get().then((snapshot) => {
         adminList = [];
-        let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            data.id = doc.id;
-            adminList.push(data);
-            html += `
-                <tr>
-                    <td>${data.nama}</td>
-                    <td>${data.username}</td>
-                    <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
-                    <td>${data.jenisKelamin || '-'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editAdmin('${data.id}')"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'admin')"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
-        document.getElementById("adminTableBody").innerHTML = html || '<tr><td colspan="5" class="text-center">Tidak ada data admin</td></tr>';
+        snapshot.forEach(doc => { const d = doc.data(); d.id = doc.id; adminList.push(d); });
+        renderAdminTable();
     });
 }
 
@@ -575,28 +712,32 @@ async function prosesImportSiswa() {
 let rombelList = [];
 let guruList = [];
 
+function renderRombelTable() {
+    const sorted = sortList(rombelList, sortState.rombel.col, sortState.rombel.dir);
+    let html = '';
+    sorted.forEach(data => {
+        html += `
+            <tr>
+                <td class="fw-bold">${data.nama}</td>
+                <td>${data.waliKelasNama || '- Belum Diatur -'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="editRombel('${data.id}')"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger shadow-sm ms-1" onclick="deleteRombel('${data.id}')"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+    document.getElementById("rombelTableBody").innerHTML = html || '<tr><td colspan="3" class="text-center text-muted">Belum ada rombel.</td></tr>';
+    const th = document.getElementById('rombelTh_nama');
+    if(th) th.innerHTML = `Nama Rombel / Kelas ${sortIcon('rombel','nama')}`;
+}
+
 function loadRombel() {
-    document.getElementById("rombelTableBody").innerHTML = `<tr><td colspan="3" class="text-center">Memuat data...</td></tr>`;
+    document.getElementById("rombelTableBody").innerHTML = `<tr><td colspan="3" class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Memuat...</td></tr>`;
     db.collection("rombel").orderBy("nama").get().then((snapshot) => {
         rombelList = [];
-        let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            data.id = doc.id;
-            rombelList.push(data);
-            
-            html += `
-                <tr>
-                    <td class="fw-bold">${data.nama}</td>
-                    <td>${data.waliKelasNama || '- Belum Diatur -'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="editRombel('${data.id}')"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger shadow-sm ms-1" onclick="deleteRombel('${data.id}')"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
-        document.getElementById("rombelTableBody").innerHTML = html || '<tr><td colspan="3" class="text-center text-muted">Belum ada rombel.</td></tr>';
+        snapshot.forEach(doc => { const d = doc.data(); d.id = doc.id; rombelList.push(d); });
+        renderRombelTable();
     });
 }
 
@@ -640,7 +781,7 @@ function editRombel(id) {
 async function handleSaveRombel(e) {
     e.preventDefault();
     const id = document.getElementById("rombelId").value;
-    const nama = document.getElementById("rombelNama").value;
+    const nama = document.getElementById("rombelNama").value.trim();
     const waliId = document.getElementById("rombelWaliKelas").value;
 
     let waliNama = "";
@@ -653,38 +794,45 @@ async function handleSaveRombel(e) {
     }
 
     try {
-        // --- Ambil data rombel lama untuk deteksi perubahan wali kelas ---
-        let oldWaliId = null;
+        let oldNama = null, oldWaliId = null;
         if(id) {
             const oldDoc = await db.collection("rombel").doc(id).get();
-            if(oldDoc.exists) oldWaliId = oldDoc.data().waliKelasId || null;
+            if(oldDoc.exists) {
+                oldNama   = oldDoc.data().nama || null;
+                oldWaliId = oldDoc.data().waliKelasId || null;
+            }
         }
 
-        // --- Simpan / Update Rombel ---
+        // Simpan / Update Rombel
+        let rombelDocId = id;
         if(id) {
             await db.collection("rombel").doc(id).update({
                 nama, waliKelasId: waliId, waliKelasNama: waliNama
             });
         } else {
-            await db.collection("rombel").add({
+            const newRef = await db.collection("rombel").add({
                 nama, waliKelasId: waliId, waliKelasNama: waliNama,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            rombelDocId = newRef.id;
         }
 
-        // --- Sync user doc guru (agar tabel guru menampilkan wali otomatis) ---
         const batch = db.batch();
 
-        // Jika wali lama diganti / dihapus → clear data rombelnya
-        if(oldWaliId && oldWaliId !== waliId) {
-            const oldGuruRef = db.collection("users").doc(oldWaliId);
-            batch.update(oldGuruRef, { rombelId: "", rombelNama: "" });
+        // Jika nama rombel berubah → update semua siswa di rombel ini
+        if(id && oldNama && oldNama !== nama) {
+            const siswaSnap = await db.collection("users")
+                .where("rombelId", "==", id)
+                .where("role", "==", "siswa").get();
+            siswaSnap.forEach(d => batch.update(d.ref, { rombelNama: nama }));
         }
 
-        // Set data rombel ke user guru yang baru dipilih
+        // Sync wali kelas guru (lama → clear, baru → set)
+        if(oldWaliId && oldWaliId !== waliId) {
+            batch.update(db.collection("users").doc(oldWaliId), { rombelId: "", rombelNama: "" });
+        }
         if(waliId) {
-            const newGuruRef = db.collection("users").doc(waliId);
-            batch.update(newGuruRef, { rombelId: id || "", rombelNama: nama });
+            batch.update(db.collection("users").doc(waliId), { rombelId: rombelDocId, rombelNama: nama });
         }
 
         await batch.commit();
@@ -692,22 +840,127 @@ async function handleSaveRombel(e) {
         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Rombel tersimpan', showConfirmButton: false, timer: 1500 });
         mRombel.hide();
         loadRombel();
-        // Refresh tabel guru jika sedang terbuka
         if(document.getElementById('page-guru') && !document.getElementById('page-guru').classList.contains('d-none')) {
             loadGuru();
         }
-
     } catch(err) {
         Swal.fire('Gagal Menyimpan', err.message, 'error');
     }
 }
 
-function deleteRombel(id) {
-    Swal.fire({ title: 'Hapus Rombel?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus' }).then((result) => {
-        if (result.isConfirmed) {
-            db.collection("rombel").doc(id).delete().then(() => loadRombel());
+async function deleteRombel(id) {
+    // Cek berapa siswa yang ada di rombel ini
+    const siswaSnap = await db.collection("users")
+        .where("rombelId", "==", id)
+        .where("role", "==", "siswa").get();
+    const jmlSiswa = siswaSnap.size;
+
+    const rombelData = rombelList.find(r => r.id === id);
+    const rombelNama = rombelData ? rombelData.nama : 'ini';
+
+    Swal.fire({
+        title: 'Hapus Rombel?',
+        html: jmlSiswa > 0
+            ? `<div class="text-start">
+                <p>Anda akan menghapus rombel <b>${rombelNama}</b>.</p>
+                <div class="alert alert-danger p-2" style="font-size:0.85rem;">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    <b>${jmlSiswa} siswa</b> di rombel ini akan <b>IKUT TERHAPUS</b> dari database!
+                </div>
+               </div>`
+            : `Hapus rombel <b>${rombelNama}</b>? Tidak ada siswa yang terdampak.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: jmlSiswa > 0 ? `Hapus + ${jmlSiswa} Siswa` : 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    }).then(async (result) => {
+        if (!result.isConfirmed) return;
+        try {
+            const batch = db.batch();
+            // Hapus semua siswa di rombel ini
+            siswaSnap.forEach(d => batch.delete(d.ref));
+            // Hapus rombel sendiri
+            batch.delete(db.collection("rombel").doc(id));
+            await batch.commit();
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success',
+                title: `Rombel + ${jmlSiswa} siswa dihapus`, showConfirmButton: false, timer: 2000 });
+            loadRombel();
+            if(!document.getElementById('page-siswa').classList.contains('d-none')) loadSiswa();
+        } catch(err) {
+            Swal.fire('Gagal', err.message, 'error');
         }
     });
+}
+
+// Sinkronisasi: link siswa yang hanya punya rombelNama (tidak ada rombelId) ke data rombel
+async function sinkronisasiRombel() {
+    const res = await Swal.fire({
+        title: 'Sinkronisasi Siswa ↔ Rombel',
+        html: `<div class="text-start small">
+            <p>Fitur ini akan:</p>
+            <ul>
+                <li>Mencocokkan <b>nama rombel</b> siswa yang belum terhubung ke data rombel</li>
+                <li>Mengisi <b>rombelId</b> dan <b>waliKelasNama</b> secara otomatis</li>
+            </ul>
+            <p class="text-muted">Siswa yang sudah punya rombelId tidak akan diubah.</p>
+        </div>`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Mulai Sinkronisasi',
+        cancelButtonText: 'Batal'
+    });
+    if (!res.isConfirmed) return;
+
+    try {
+        // Load semua rombel
+        const rombelSnap = await db.collection("rombel").get();
+        const rombelMap = {}; // namaLower → {id, nama, waliKelasNama}
+        rombelSnap.forEach(d => {
+            const r = d.data();
+            rombelMap[String(r.nama || '').toLowerCase().trim()] = {
+                id: d.id,
+                nama: r.nama,
+                waliKelasNama: r.waliKelasNama || ''
+            };
+        });
+
+        // Load siswa tanpa rombelId
+        const siswaSnap = await db.collection("users")
+            .where("role", "==", "siswa").get();
+
+        const batch = db.batch();
+        let updated = 0, notFound = 0;
+
+        siswaSnap.forEach(d => {
+            const s = d.data();
+            if(s.rombelId) return; // sudah terhubung, skip
+            const key = String(s.rombelNama || '').toLowerCase().trim();
+            if(!key) return;
+            const match = rombelMap[key];
+            if(match) {
+                batch.update(d.ref, {
+                    rombelId: match.id,
+                    rombelNama: match.nama,
+                    waliKelasNama: match.waliKelasNama
+                });
+                updated++;
+            } else {
+                notFound++;
+            }
+        });
+
+        await batch.commit();
+
+        Swal.fire('Sinkronisasi Selesai!',
+            `<b>${updated}</b> siswa berhasil ditautkan ke rombel.<br>`
+            + (notFound > 0 ? `<span class="text-warning">${notFound} siswa tidak ditemukan pasangan rombelnya.</span>` : ''),
+            'success');
+        loadSiswa();
+    } catch(err) {
+        Swal.fire('Gagal', err.message, 'error');
+    }
 }
 
 // ---------------------------------------------------------
