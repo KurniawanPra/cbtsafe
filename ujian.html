@@ -155,17 +155,21 @@
 
                 <!-- Action Row (Prev/Next/Selesai) -->
                 <div class="nav-action-row">
-                    <button class="btn btn-outline-secondary btn-nav-exam flex-grow-1 justify-content-center" id="btnPrev" title="Soal Sebelumnya">
-                        <i class="bi bi-arrow-left-short fs-5 me-1"></i> Prev
-                    </button>
-                    <button class="btn btn-outline-primary btn-nav-exam flex-grow-1 justify-content-center" id="btnNext" title="Soal Selanjutnya">
-                        Next <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
+                    <!-- Kiri: Navigasi Kecil -->
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary px-3 shadow-sm" id="btnPrev" title="Soal Sebelumnya">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary px-3 shadow-sm" id="btnNext" title="Soal Selanjutnya">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Kanan: Tombol Selesai (hidden default) -->
+                    <button class="btn btn-sm btn-success d-none px-3 fw-bold shadow-sm" id="btnSelesai" onclick="submitUjianManual()">
+                        Selesai <i class="bi bi-check-circle ms-1"></i>
                     </button>
                 </div>
-
-                <button class="btn btn-success btn-nav-exam w-100 justify-content-center mt-3 d-none shadow-sm text-uppercase fw-bold" id="btnSelesai" onclick="submitUjianManual()">
-                    <i class="bi bi-check-circle me-2 fs-5"></i> Selesai Ujian
-                </button>
             </div>
         </div>
     </div>

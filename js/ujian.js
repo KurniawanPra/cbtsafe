@@ -242,15 +242,10 @@ function tampilkanSoal(idx) {
     document.getElementById("btnPrev").disabled = (idx === 0);
     document.getElementById("btnNext").disabled = (idx === soalList.length - 1);
     
-    // Tampilkan tombol selesai jika di soal terakhir
-    if(idx === soalList.length - 1) {
-        document.getElementById("btnSelesai").classList.remove("d-none");
-    } else {
-        document.getElementById("btnSelesai").classList.add("d-none");
-    }
-
+    cekSelesaiVisual();
     renderNavigasi();
 }
+
 
 function simpanJawaban(soalIdx, nilai, isEssay = false) {
     if(isEssay) {
@@ -268,7 +263,31 @@ function simpanJawaban(soalIdx, nilai, isEssay = false) {
             kotak.classList.remove('dijawab');
         }
     }
+    
+    cekSelesaiVisual();
 }
+
+function cekSelesaiVisual() {
+    let semuaTerjawab = true;
+    for(let i=0; i<soalList.length; i++) {
+        const jawb = jawabanUser[i];
+        if(soalList[i].tipe === 'pg') {
+            if(jawb === null || jawb === undefined) { semuaTerjawab = false; break; }
+        } else {
+            if(!jawb || jawb.toString().trim() === "") { semuaTerjawab = false; break; }
+        }
+    }
+    
+    const btnSel = document.getElementById("btnSelesai");
+    if(btnSel) {
+        if(semuaTerjawab) {
+            btnSel.classList.remove("d-none");
+        } else {
+            btnSel.classList.add("d-none");
+        }
+    }
+}
+
 
 function renderNavigasi() {
     const grid = document.getElementById("navGrid");
