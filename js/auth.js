@@ -1,112 +1,142 @@
 // ============================================================
-// AUTH.JS - Autentikasi & Manajemen Sesi (Firebase)
+// AUTH.JS - Autentikasi & Manajemen Sesi (Firestore Custom)
 // ============================================================
+
+/**
+ * Hitung path relatif ke login (index.html di root)
+ */
+function getLoginPath() {
+  const path = window.location.pathname;
+  if (/\/(admin|guru|siswa|soal)\//i.test(path)) {
+    return '../index.html';
+  }
+  return 'index.html';
+}
+
+/**
+ * Hitung path relatif ke halaman role tertentu
+ */
+function getRolePath(role) {
+  const path = window.location.pathname;
+  const isSubdir = /\/(admin|guru|siswa|soal)\//i.test(path);
+  const prefix = isSubdir ? '../' : '';
+  if (role === 'admin') return prefix + 'admin/index.html';
+  if (role === 'guru')  return prefix + 'guru/index.html';
+  if (role === 'siswa') return prefix + 'siswa/index.html';
+  return getLoginPath();
+}
+
+/**
+ * Get User Data dari LocalStorage
+ */
+function getUserLocal() {
+    const data = localStorage.getItem("cbt_user");
+    return data ? JSON.parse(data) : null;
+}
 
 /**
  * Cek status login saat halaman dimuat
  * @param {string} requiredRole - "admin", "guru", atau "siswa"
  */
 function checkAuth(requiredRole = null) {
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      // User is signed in.
-      // Ambil data dari firestore untuk cek role
-      db.collection("users").doc(user.uid).get()
-        .then((doc) => {
-          if (doc.exists) {
-            const userData = doc.data();
-            console.log("Logged in as:", userData.role);
+    const user = getUserLocal();
 
-            // Simpan data dasar di localStorage untuk akses cepat UI
+    if (!user || !user.uid) {
+        // Tidak ada sesi tersimpan
+        if (requiredRole) {
+            window.location.href = getLoginPath();
+        }
+        return;
+    }
+
+    // Verifikasi user masih ada di Firestore
+    db.collection("users").doc(user.uid).get()
+        .then((doc) => {
+            if (!doc.exists) {
+                // Data terhapus dari DB, paksa logout
+                _clearSession();
+                return;
+            }
+
+            const userData = doc.data();
+
+            // Perbarui localStorage dengan data terbaru
             localStorage.setItem("cbt_user", JSON.stringify({
-              uid: user.uid,
-              nama: userData.nama,
-              role: userData.role,
-              username: userData.username,
-              rombelId: userData.rombelId || ""
+                uid: user.uid,
+                nama: userData.nama,
+                role: userData.role,
+                username: userData.username,
+                rombelId: userData.rombelId || ""
             }));
 
             // Redirect guard
             if (requiredRole && userData.role !== requiredRole) {
-              Swal.fire({
-                title: 'Akses Ditolak',
-                text: "Anda tidak memiliki hak akses sebagai " + requiredRole,
-                icon: 'error',
-                confirmButtonColor: '#ef4444'
-              }).then(() => {
-                if (userData.role === 'admin') window.location.href = "/admin/index.html";
-                else if (userData.role === 'guru') window.location.href = "/guru/index.html";
-                else if (userData.role === 'siswa') window.location.href = "/siswa/index.html";
-                else window.location.href = "/index.html";
-              });
+                Swal.fire({
+                    title: 'Akses Ditolak',
+                    text: "Anda tidak memiliki hak akses sebagai " + requiredRole,
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                }).then(() => {
+                    window.location.href = getRolePath(userData.role);
+                });
             } else if (!requiredRole) {
-              // Jika ini di halaman login (index.html root)
-              if (window.location.pathname.endsWith("/") || window.location.pathname.endsWith("index.html") && !window.location.pathname.includes("admin") && !window.location.pathname.includes("guru") && !window.location.pathname.includes("siswa")) {
-                if (userData.role === 'admin') window.location.href = "admin/index.html";
-                else if (userData.role === 'guru') window.location.href = "guru/index.html";
-                else if (userData.role === 'siswa') window.location.href = "siswa/index.html";
-              }
+                // Halaman login → redirect jika sudah login
+                const pth = window.location.pathname;
+                const isLoginPage = pth.endsWith("/") ||
+                    (pth.endsWith("index.html") && !pth.includes("/admin/") && !pth.includes("/guru/") && !pth.includes("/siswa/"));
+                if (isLoginPage) {
+                    window.location.href = getRolePath(userData.role);
+                }
             }
 
             // Update status online
             updateOnlineStatus(user.uid, true);
 
-          } else {
-            console.log("No user data found in Database!");
-            firebase.auth().signOut();
-          }
-        }).catch((error) => {
-          console.log("Error getting user data:", error);
+        }).catch((err) => {
+            console.error("checkAuth error:", err);
         });
-    } else {
-      // User is signed out.
-      localStorage.removeItem("cbt_user");
-      if (requiredRole) {
-        window.location.href = "/index.html";
-      }
-    }
-  });
 }
 
 /**
- * Logout fungsi dengan SweetAlert2 (Terpusat)
+ * Logout dengan konfirmasi SweetAlert2 (dipanggil dari tombol UI)
  */
 function logoutWithSwal() {
-  if (typeof Swal !== 'undefined') {
-      Swal.fire({
-          title: 'Keluar Aplikasi?',
-          text: "Anda akan keluar dari sesi PPLG47",
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#ef4444',
-          cancelButtonColor: '#6b7280',
-          confirmButtonText: 'Ya, Keluar'
-      }).then((result) => {
-          if (result.isConfirmed) {
-              logout();
-          }
-      });
-  } else {
-      if(confirm('Keluar dari sesi PPLG47?')) {
-          logout();
-      }
-  }
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Keluar Aplikasi?',
+            text: "Anda akan keluar dari sesi CBT SAFE",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Ya, Keluar',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) logout();
+        });
+    } else {
+        if (confirm('Keluar?')) logout();
+    }
 }
 
 /**
  * Logout System (Internal)
  */
 function logout() {
-  const user = firebase.auth().currentUser;
-  if(user) {
-    updateOnlineStatus(user.uid, false).then(() => {
-        firebase.auth().signOut().then(() => {
-            window.location.href = "/index.html";
+    const user = getUserLocal();
+    const loginPath = getLoginPath();
+    if (user && user.uid) {
+        updateOnlineStatus(user.uid, false).catch(() => {}).finally(() => {
+            _clearSession();
         });
-    });
-  } else {
-      window.location.href = "/index.html";
-  }
+    } else {
+        _clearSession();
+    }
+}
+
+function _clearSession() {
+    localStorage.removeItem("cbt_user");
+    window.location.href = getLoginPath();
 }
 
 /**
@@ -121,16 +151,8 @@ function updateOnlineStatus(uid, isOnline) {
 
 // Heartbeat untuk mempertahankan status online
 setInterval(() => {
-    const user = firebase.auth().currentUser;
-    if (user) {
-        updateOnlineStatus(user.uid, true);
+    const user = getUserLocal();
+    if (user && user.uid) {
+        updateOnlineStatus(user.uid, true).catch(() => {});
     }
 }, 30000); // 30 detik sekali
-
-/**
- * Get User Data Sinkron dari LocalStorage untuk UI render cepat
- */
-function getUserLocal() {
-    const data = localStorage.getItem("cbt_user");
-    return data ? JSON.parse(data) : null;
-}

@@ -1,7 +1,3 @@
-/* =========================================================================
-   CBT SAFE v2 - MAIN STYLESHEET
-   Desain modern, bersih, minimalis terinspirasi platform Edukasi (Kejar.id)
-   ========================================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -198,7 +194,8 @@ body {
 .siswa-topbar {
   background-color: #fff;
   border-bottom: 1px solid var(--gray-200);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 0.5rem 0;
 }
 .siswa-topbar .nav-link {
   color: var(--gray-600);
@@ -212,6 +209,20 @@ body {
 .siswa-topbar .nav-link.active {
   color: var(--blue-600);
   border-bottom-color: var(--blue-600);
+}
+
+/* Siswa mobile topbar: ensure dropdown always reachable */
+@media (max-width: 576px) {
+  .siswa-topbar .container {
+    padding: 0 0.75rem;
+  }
+  .siswa-topbar .navbar-brand {
+    font-size: 0.85rem;
+  }
+  .siswa-topbar .navbar-brand .bi-house-door,
+  .siswa-topbar .navbar-brand .bi-chevron-right {
+    display: none;
+  }
 }
 
 /* --- Layout Sidebar Khusus Guru & Admin --- */
@@ -259,18 +270,21 @@ body {
     }
     .cbt-sidebar.show {
         transform: translateX(0);
-        box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.15);
     }
     .layout-with-sidebar .sidebar-toggle {
         display: flex;
     }
-    .cbt-sidebar.show + .sidebar-toggle,
+    /* Hide toggle when sidebar is open (overlay handles close) */
+    .cbt-sidebar.show ~ .sidebar-toggle {
+        display: none !important;
+    }
     body.modal-open .sidebar-toggle,
     body.swal2-shown .sidebar-toggle {
         display: none !important;
     }
     .main-content {
-        padding-top: 4.5rem !important;
+        padding-top: 4rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
@@ -284,6 +298,14 @@ body {
     }
     .sidebar-overlay.show {
         display: block;
+    }
+
+    /* Sidebar bottom section: prevent overflow on small screens */
+    .cbt-sidebar .mt-auto {
+        padding: 0.75rem !important;
+    }
+    .cbt-sidebar .mt-auto .dropdown-toggle {
+        font-size: 0.9rem;
     }
 }
 
@@ -679,8 +701,22 @@ body {
     gap: 4px;
   }
   .hero-content h1 { font-size: 1.8rem; }
-  .btn-nav-exam span { display: none; } /* Hide text on mobile nav buttons to save space */
+  .btn-nav-exam span { display: none; }
   .btn-nav-exam i { font-size: 1.5rem !important; margin: 0 !important; }
+
+  /* Dashboard admin/guru: stack cards on mobile */
+  .main-content {
+    padding-top: 4rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  .main-content h3 {
+    font-size: 1.15rem;
+  }
+  /* Cards compact on mobile */
+  .card-body {
+    padding: 1rem !important;
+  }
 }
 
 /* PREMIUM UI UTILITIES */

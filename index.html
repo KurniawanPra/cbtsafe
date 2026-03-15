@@ -95,7 +95,6 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
     }
     .ll-brandmark img {
       width: 55px;
@@ -331,8 +330,24 @@
     ══════════════════════════════ */
     @media (max-width: 900px) {
       .login-left { display: none !important; }
-      .login-right { width: 100%; min-width: 0; }
+      .login-right {
+        width: 100%;
+        min-width: 0;
+        padding: 2rem 1.25rem;
+      }
+      .login-form-wrap {
+        max-width: 100%;
+      }
       .lr-mobile-brand { display: flex; }
+      .lf-title { font-size: 26px; }
+    }
+
+    @media (max-width: 480px) {
+      .login-right {
+        padding: 1.5rem 1rem;
+      }
+      .lf-btn { height: 52px; font-size: 14px; }
+      .lf-input { height: 50px; font-size: 16px; } /* prevent iOS zoom */
     }
   </style>
 </head>
@@ -341,7 +356,7 @@
 <div class="login-wrap">
 
   <!-- ── LEFT PANEL ── -->
-  <div class="login-left d-none d-lg-flex">
+  <div class="login-left">
     <div class="ll-inner">
 
       <!-- Brand centered -->
@@ -388,10 +403,7 @@
       <!-- Mobile brand (hidden on desktop) -->
       <div class="lr-mobile-brand d-lg-none">
         <div class="ll-brandmark">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M3 9L7.5 13.5L15 4.5" stroke="#fff" stroke-width="2.2"
-              stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <img src="img/logo.png" alt="Logo PPLG47">
         </div>
         <span style="font-size:15px; font-weight:700; color:var(--blue-700); letter-spacing:.04em;">PPLG47</span>
       </div>
@@ -440,6 +452,12 @@
       </form>
 
       <div class="lf-footer">&copy; 2026 PPLG47 Team</div>
+      <!-- <div class="text-center mt-2">
+        <button type="button" onclick="showInitModal()"
+          style="background:none;border:none;color:#94a3b8;font-size:0.75rem;cursor:pointer;text-decoration:underline;">
+          ⚙️ Setup Admin Pertama
+        </button>
+      </div> -->
     </div>
   </div>
 
@@ -495,7 +513,7 @@
       : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
   });
 
-  // Handle login submit
+  // Handle login submit — Firestore Custom Auth
   document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const alertEl  = document.getElementById('loginAlert');
@@ -517,36 +535,47 @@
         `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Memproses...`;
       alertEl.classList.remove('visible');
 
-      let email = '';
-      try {
-        const userQuery = await db.collection('users')
-          .where('username', '==', username).limit(1).get();
-        if (userQuery.empty) throw new Error('Username tidak ditemukan.');
-        email = userQuery.docs[0].data().email;
-      } catch (firestoreError) {
-        if (firestoreError.code === 'permission-denied') {
-          throw new Error(
-            'Akses Database Ditolak! Pastikan Rules Firestore Anda diset ke ' +
-            '\'allow read, write: if true;\' (Mode Uji Coba) di console Firebase.'
-          );
-        }
-        throw firestoreError;
+      // Query Firestore: cocokkan username + passwordPlain
+      const userQuery = await db.collection('users')
+        .where('username', '==', username)
+        .limit(1).get();
+
+      if (userQuery.empty) {
+        throw new Error('USERNAME_NOT_FOUND');
       }
 
-      await firebase.auth().signInWithEmailAndPassword(email, password);
+      const docSnap = userQuery.docs[0];
+      const userData = docSnap.data();
+
+      if (userData.passwordPlain !== password) {
+        throw new Error('WRONG_PASSWORD');
+      }
+
+      // Login berhasil — simpan sesi di localStorage
+      localStorage.setItem('cbt_user', JSON.stringify({
+        uid: docSnap.id,
+        nama: userData.nama,
+        role: userData.role,
+        username: userData.username,
+        rombelId: userData.rombelId || ''
+      }));
+
+      // Update status online di Firestore
+      await db.collection('users').doc(docSnap.id).update({
+        isOnline: true,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Redirect sesuai role
+      const roleMap = { admin: 'admin/index.html', guru: 'guru/index.html', siswa: 'siswa/index.html' };
+      window.location.href = roleMap[userData.role] || 'index.html';
 
     } catch (error) {
       alertEl.classList.add('visible');
-      if (error.code === 'auth/wrong-password' || error.message === 'Username tidak ditemukan.') {
+      if (error.message === 'USERNAME_NOT_FOUND' || error.message === 'WRONG_PASSWORD') {
         alertMsg.textContent = 'Username atau password salah.';
-      } else if (error.code === 'auth/user-not-found') {
-        alertMsg.textContent = 'Akun tidak ditemukan (email tidak terdaftar).';
-      } else if (error.code === 'auth/too-many-requests') {
-        alertMsg.textContent = 'Terlalu banyak percobaan gagal. Coba sesaat lagi.';
-      } else if (error.message.includes('Akses Database Ditolak')) {
-        alertMsg.innerHTML =
-          '<strong>Error Security Rules:</strong> Ubah Firestore Rules menjadi ' +
-          '<code>allow read, write: if true;</code>';
+      } else if (error.code === 'permission-denied') {
+        alertMsg.innerHTML = '<strong>Error Security Rules:</strong> Ubah Firestore Rules menjadi <code>allow read, write: if true;</code>';
       } else {
         alertMsg.textContent = 'Gagal login: ' + error.message;
       }
@@ -555,22 +584,31 @@
     }
   });
 
-  // Setup admin modal
+  // Setup admin modal — Firestore only, no Firebase Auth
   const modalInit = new bootstrap.Modal(document.getElementById('modalInit'));
   function showInitModal() { modalInit.show(); }
 
   document.getElementById('btnBuatAdmin').addEventListener('click', async () => {
-    const email = document.getElementById('initEmail').value;
+    const email = document.getElementById('initEmail').value.trim();
     const pwd   = document.getElementById('initPassword').value;
-    const usr   = document.getElementById('initUsername').value;
+    const usr   = document.getElementById('initUsername').value.trim();
+    if (!usr || !pwd) { alert('Username dan Password wajib diisi!'); return; }
     try {
-      const uc = await firebase.auth().createUserWithEmailAndPassword(email, pwd);
-      await db.collection('users').doc(uc.user.uid).set({
-        nama: 'Administrator', username: usr, email,
+      // Cek apakah username sudah ada
+      const existing = await db.collection('users').where('username','==',usr).limit(1).get();
+      if (!existing.empty) { alert('Username sudah dipakai!'); return; }
+
+      const newRef = db.collection('users').doc();
+      await newRef.set({
+        nama: 'Administrator',
+        username: usr,
+        email: email || '',
+        passwordPlain: pwd,
         role: 'admin',
+        isOnline: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      alert('Admin berhasil dibuat!');
+      alert('Admin berhasil dibuat! Silakan login dengan username: ' + usr);
       modalInit.hide();
     } catch (err) {
       alert('Error: ' + err.message);

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 – Halaman Tidak Ditemukan | PPLG47</title>
+  <link rel="icon" href="img/logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #0a0f1e;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 2rem;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,0.3) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 80% at 80% 80%, rgba(139,92,246,0.15) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .error-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.35);
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      margin-bottom: 2rem;
+    }
+
+    .error-code {
+      font-size: clamp(80px, 20vw, 160px);
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.04em;
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(59,130,246,0.4)); }
+      50% { filter: drop-shadow(0 0 40px rgba(139,92,246,0.6)); }
+    }
+
+    h1 {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      font-size: 15px;
+      color: rgba(255,255,255,0.5);
+      max-width: 400px;
+      line-height: 1.7;
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary-err {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+    }
+    .btn-primary-err:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(59,130,246,0.5);
+      color: #fff;
+    }
+
+    .btn-ghost-err {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.7);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-ghost-err:hover {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    /* Floating dots */
+    .dot {
+      position: fixed;
+      border-radius: 50%;
+      background: rgba(59,130,246,0.15);
+      animation: float linear infinite;
+    }
+    .dot:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 5%; animation-duration: 8s; }
+    .dot:nth-child(2) { width: 50px; height: 50px; top: 70%; left: 90%; animation-duration: 12s; animation-delay: -3s; }
+    .dot:nth-child(3) { width: 30px; height: 30px; top: 40%; left: 80%; animation-duration: 7s; animation-delay: -5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-25px) rotate(180deg); }
+    }
+
+    .content { position: relative; z-index: 2; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="dot"></div>
+  <div class="dot"></div>
+  <div class="dot"></div>
+
+  <div class="content">
+    <div class="error-badge">
+      <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 15a1 1 0 110-2 1 1 0 010 2zm1-4h-2V7h2v6z"/></svg>
+      Error 404
+    </div>
+
+    <div class="error-code">404</div>
+
+    <h1>Halaman Tidak Ditemukan</h1>
+    <p>Halaman yang Anda cari tidak ada, sudah dipindahkan, atau URL yang dimasukkan salah.</p>
+
+    <div class="btn-group">
+      <a href="index.html" class="btn-primary-err">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        Kembali ke Login
+      </a>
+      <a href="javascript:history.back()" class="btn-ghost-err">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12,19 5,12 12,5"/></svg>
+        Halaman Sebelumnya
+      </a>
+    </div>
+  </div>
+</body>
+</html>

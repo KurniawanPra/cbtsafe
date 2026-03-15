@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - PPLG47 v2</title>
+    <title>Dashboard Admin - PPLG47 </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="../css/style.css?v=4" rel="stylesheet">
@@ -318,13 +318,13 @@
                             <input type="text" id="siswaUsername" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label>Email (Penting untuk login)</label>
-                            <input type="email" id="siswaEmail" class="form-control" required>
+                            <label>Email</label>
+                            <input type="email" id="siswaEmail" class="form-control" placeholder="Opsional">
                         </div>
                         <div class="mb-3" id="siswaPasswordGroup">
                             <label>Password</label>
                             <input type="text" id="siswaPassword" class="form-control">
-                            <small class="text-muted">Kosongkan jika tidak ingin mengubah (saat edit).</small>
+                            <small id="siswaPasswordHint" class="text-muted d-none">Kosongkan jika tidak ingin mengubah.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -347,36 +347,30 @@
                     <div class="modal-body">
                         <input type="hidden" id="guruId">
                         <div class="mb-3">
-                            <label>Nama Lengkap (Tanpa Gelar)</label>
+                            <label>Nama Lengkap</label>
                             <input type="text" id="guruNama" class="form-control" required>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label>Jenis Kelamin (Bapak/Ibu)</label>
-                                <select id="guruKelamin" class="form-select" required>
-                                    <option value="L">Bapak</option>
-                                    <option value="P">Ibu</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label>Wali Kelas Untuk</label>
-                                <select id="guruWaliRombelId" class="form-select">
-                                    <option value="">-- Tidak Menjadi Wali --</option>
-                                </select>
-                            </div>
+                        <div class="mb-3">
+                            <label>Jenis Kelamin</label>
+                            <select id="guruKelamin" class="form-select" required>
+                                <option value="L">Bapak</option>
+                                <option value="P">Ibu</option>
+                            </select>
                         </div>
+                        <!-- guruWaliRombelId disimpan tersembunyi, dikontrol dari panel Rombel -->
+                        <input type="hidden" id="guruWaliRombelId" value="">
                         <div class="mb-3">
                             <label>Username</label>
                             <input type="text" id="guruUsername" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label>Email (Penting untuk login)</label>
-                            <input type="email" id="guruEmail" class="form-control" required>
+                            <label>Email</label>
+                            <input type="email" id="guruEmail" class="form-control" placeholder="Opsional">
                         </div>
                         <div class="mb-3" id="guruPasswordGroup">
                             <label>Password</label>
                             <input type="text" id="guruPassword" class="form-control">
-                            <small class="text-muted">Kosongkan jika tidak ingin mengubah.</small>
+                            <small id="guruPasswordHint" class="text-muted d-none">Kosongkan jika tidak ingin mengubah.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -420,7 +414,7 @@
                         <div class="mb-3" id="adminPasswordGroup">
                             <label>Password</label>
                             <input type="text" id="adminPassword" class="form-control">
-                            <small class="text-muted">Kosongkan jika tidak ingin mengubah.</small>
+                            <small id="adminPasswordHint" class="text-muted d-none">Kosongkan jika tidak ingin mengubah.</small>
                         </div>
                     </div>
                     <div class="modal-footer">

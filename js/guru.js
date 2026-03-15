@@ -62,6 +62,49 @@ function logoutWithSwal() {
     })
 }
 
+// ---------------------------------------------------------
+// GANTI PASSWORD GURU (Self-Service)
+// ---------------------------------------------------------
+let mChangePassGuru;
+
+function initChangePasswordModal() {
+    const el = document.getElementById('modalChangePasswordGuru');
+    if (el && !mChangePassGuru) mChangePassGuru = new bootstrap.Modal(el);
+}
+
+function showChangePasswordModalGuru() {
+    initChangePasswordModal();
+    const inp = document.getElementById("newPasswordGuru");
+    const inp2 = document.getElementById("confirmPasswordGuru");
+    if (inp) inp.value = "";
+    if (inp2) inp2.value = "";
+    if (mChangePassGuru) mChangePassGuru.show();
+}
+
+async function handleGantiPasswordGuru() {
+    const newPass = document.getElementById("newPasswordGuru")?.value || "";
+    const confPass = document.getElementById("confirmPasswordGuru")?.value || "";
+
+    if (newPass.length < 6) {
+        return Swal.fire('Error', 'Password minimal 6 karakter!', 'error');
+    }
+    if (newPass !== confPass) {
+        return Swal.fire('Error', 'Konfirmasi password tidak cocok!', 'error');
+    }
+
+    try {
+        const user = getUserLocal();
+        if (!user || !user.uid) {
+            return Swal.fire('Error', 'Sesi tidak ditemukan. Silakan login ulang.', 'error');
+        }
+        await db.collection("users").doc(user.uid).update({ passwordPlain: newPass });
+        Swal.fire('Berhasil!', 'Password Anda telah diperbarui.', 'success');
+        if (mChangePassGuru) mChangePassGuru.hide();
+    } catch (err) {
+        Swal.fire('Gagal', err.message, 'error');
+    }
+}
+
 function showPage(pageId, navElement) {
     document.querySelectorAll('.guru-page').forEach(el => el.classList.add('d-none'));
     document.getElementById('page-' + pageId).classList.remove('d-none');

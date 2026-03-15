@@ -104,9 +104,10 @@ function loadSiswa() {
             html += `
                 <tr>
                     <td>${data.nama}</td>
-                    <td>${data.nis || '-'}</td>
+                    <td>${data.nis || '<span class="badge bg-light text-muted border">Tidak ada NIS</span>'}</td>
                     <td><span class="badge bg-secondary">${data.rombelNama || 'Belum Diatur'}</span></td>
                     <td>${data.jenisKelamin || '-'}</td>
+                    <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editSiswa('${data.id}')"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'siswa')"><i class="bi bi-trash"></i></button>
@@ -133,7 +134,7 @@ function loadGuru() {
                     <td>${data.nama}</td>
                     <td><span class="badge bg-secondary">${data.rombelNama || 'Bukan Wali'}</span></td>
                     <td>${data.jenisKelamin || '-'}</td>
-                    <td>${data.email}</td>
+                    <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editGuru('${data.id}')"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data.id}', 'guru')"><i class="bi bi-trash"></i></button>
@@ -159,7 +160,7 @@ function loadAdmin() {
                 <tr>
                     <td>${data.nama}</td>
                     <td>${data.username}</td>
-                    <td>${data.email}</td>
+                    <td>${data.email || '<span class="badge bg-warning-subtle text-warning border"><i class="bi bi-envelope-slash me-1"></i>Tidak ada email</span>'}</td>
                     <td>${data.jenisKelamin || '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editAdmin('${data.id}')"><i class="bi bi-pencil"></i></button>
@@ -197,6 +198,7 @@ function showUserModal(role) {
         document.getElementById("modalSiswaTitle").textContent = "Tambah Siswa";
         document.getElementById("siswaEmail").disabled = false;
         document.getElementById("siswaPassword").required = true;
+        document.getElementById("siswaPasswordHint").classList.add("d-none"); // Sembunyikan hint saat tambah
         populateRombelSelects().then(() => mSiswa.show());
     } else if (role === 'guru') {
         document.getElementById("guruForm").reset();
@@ -204,6 +206,7 @@ function showUserModal(role) {
         document.getElementById("modalGuruTitle").textContent = "Tambah Guru";
         document.getElementById("guruEmail").disabled = false;
         document.getElementById("guruPassword").required = true;
+        document.getElementById("guruPasswordHint").classList.add("d-none"); // Sembunyikan hint saat tambah
         populateRombelSelects().then(() => mGuru.show());
     } else {
         document.getElementById("adminForm").reset();
@@ -211,6 +214,7 @@ function showUserModal(role) {
         document.getElementById("modalAdminTitle").textContent = "Tambah Admin";
         document.getElementById("adminEmail").disabled = false;
         document.getElementById("adminPassword").required = true;
+        document.getElementById("adminPasswordHint").classList.add("d-none"); // Sembunyikan hint saat tambah
         mAdmin.show();
     }
 }
@@ -226,6 +230,7 @@ function editSiswa(id) {
     document.getElementById("siswaEmail").value = user.email;
     document.getElementById("siswaEmail").disabled = true; 
     document.getElementById("siswaPassword").required = false;
+    document.getElementById("siswaPasswordHint").classList.remove("d-none"); // Tampilkan hint saat edit
     document.getElementById("modalSiswaTitle").textContent = "Edit Siswa";
     
     populateRombelSelects().then(() => {
@@ -244,12 +249,9 @@ function editGuru(id) {
     document.getElementById("guruEmail").value = user.email;
     document.getElementById("guruEmail").disabled = true; 
     document.getElementById("guruPassword").required = false;
+    document.getElementById("guruPasswordHint").classList.remove("d-none");
     document.getElementById("modalGuruTitle").textContent = "Edit Guru";
-    
-    populateRombelSelects().then(() => {
-        document.getElementById("guruWaliRombelId").value = user.rombelId || "";
-        mGuru.show();
-    });
+    mGuru.show();
 }
 
 function editAdmin(id) {
@@ -262,6 +264,7 @@ function editAdmin(id) {
     document.getElementById("adminEmail").value = user.email;
     document.getElementById("adminEmail").disabled = true; 
     document.getElementById("adminPassword").required = false;
+    document.getElementById("adminPasswordHint").classList.remove("d-none"); // Tampilkan hint saat edit
     document.getElementById("modalAdminTitle").textContent = "Edit Admin";
     mAdmin.show();
 }
@@ -297,33 +300,13 @@ async function handleSaveGuru(e) {
         nama: document.getElementById("guruNama").value,
         jenisKelamin: document.getElementById("guruKelamin").value,
         username: document.getElementById("guruUsername").value,
-        email: document.getElementById("guruEmail").value,
-        rombelId: document.getElementById("guruWaliRombelId").value
+        email: document.getElementById("guruEmail").value
+        // rombelId & rombelNama dikelola dari panel Rombel, tidak di-overwrite di sini
     };
-    
-    if(payload.rombelId) {
-        const r = rombelList.find(x => x.id === payload.rombelId);
-        if(r) payload.rombelNama = r.nama;
-    } else {
-        payload.rombelNama = "";
-    }
 
     const id = document.getElementById("guruId").value;
     const password = document.getElementById("guruPassword").value;
-    
-    // Khusus guru, kita perlu mengupdate entitas rombel jika dia dijadikan wali kelas
-    try {
-        await saveUserToFirebase(id, payload, password, mGuru, loadGuru);
-        // Post-save action: Update Rombel if selected
-        if (id && payload.rombelId) {
-             const prefix = payload.jenisKelamin === 'P' ? 'Ibu ' : (payload.jenisKelamin === 'L' ? 'Bapak ' : ''); 
-             const waliNama = `${prefix}${payload.nama}`;
-             await db.collection("rombel").doc(payload.rombelId).update({
-                 waliKelasId: id,
-                 waliKelasNama: waliNama
-             });
-        }
-    } catch (e) { console.error(e) }
+    saveUserToFirebase(id, payload, password, mGuru, loadGuru);
 }
 
 async function handleSaveAdmin(e) {
@@ -341,43 +324,35 @@ async function handleSaveAdmin(e) {
     saveUserToFirebase(id, payload, password, mAdmin, loadAdmin);
 }
 
-// Core Firebase Save Utility
+// Core Firestore Save Utility (Tanpa Firebase Auth)
 async function saveUserToFirebase(id, payload, password, modalTarget, reloadCallback) {
     try {
         if(id) {
-            // Edit
+            // Mode Edit: update profil saja, password hanya jika diisi
+            if (password) payload.passwordPlain = password;
             await db.collection("users").doc(id).update(payload);
-            Swal.fire('Diupdate!', 'Data pengguna berhasil diubah.', 'success');
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Data berhasil diubah', showConfirmButton: false, timer: 1800 });
             modalTarget.hide();
             reloadCallback();
         } else {
-            // Add NEW
-            await Swal.fire({
-                title: 'Perhatian Firebase SDK',
-                text: 'Membuat user baru via form akan otomatis me-logout Administrator saat ini karena limitasi keamanan. Anda harus login kembali setelah ini selesai.',
-                icon: 'info'
-            });
-            const cred = await firebase.auth().createUserWithEmailAndPassword(payload.email, password);
-            payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-            await db.collection("users").doc(cred.user.uid).set(payload);
-            
-            // Return early if Guru because guru handleSave needs the ID to update Rombel
-            // Wait, we need to return the ID so that handleSaveGuru can use it
-            // if we are going to logout anyway, we should update rombel before reloading
-            const idBaru = cred.user.uid;
-            
-            if (payload.role === 'guru' && payload.rombelId) {
-                const prefix = payload.jenisKelamin === 'P' ? 'Ibu ' : (payload.jenisKelamin === 'L' ? 'Bapak ' : ''); 
-                const waliNama = `${prefix}${payload.nama}`;
-                await db.collection("rombel").doc(payload.rombelId).update({
-                    waliKelasId: idBaru,
-                    waliKelasNama: waliNama
-                });
+            // Mode Tambah: Cek username tidak duplikat
+            const existing = await db.collection("users").where("username", "==", payload.username).limit(1).get();
+            if (!existing.empty) {
+                return Swal.fire('Gagal', 'Username "' + payload.username + '" sudah digunakan.', 'error');
             }
-
-            await Swal.fire('Berhasil Terdaftar!', 'User baru berhasil dibuat. Anda akan di-logout.', 'success');
-            window.location.reload();
-            return idBaru;
+            if (!password) {
+                return Swal.fire('Gagal', 'Password wajib diisi saat menambah user baru.', 'error');
+            }
+            payload.passwordPlain = password;
+            payload.isOnline = false;
+            payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            const newRef = db.collection("users").doc();
+            await newRef.set(payload);
+            const newId = newRef.id;
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'User berhasil ditambahkan', showConfirmButton: false, timer: 1800 });
+            modalTarget.hide();
+            reloadCallback();
+            return newId;
         }
     } catch (err) {
         Swal.fire('Proses Gagal', err.message, 'error');
@@ -387,21 +362,22 @@ async function saveUserToFirebase(id, payload, password, modalTarget, reloadCall
 
 function deleteUser(id, requiredReload) {
     Swal.fire({
-        title: 'Hapus User Database?',
-        text: "Kredensial utamanya di Authentication Console harus Anda hapus manual.",
+        title: 'Hapus User?',
+        text: 'Data user ini akan dihapus permanen dari database.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Ya, Hapus Data'
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
             db.collection("users").doc(id).delete().then(() => {
                 if(requiredReload === 'siswa') loadSiswa();
                 if(requiredReload === 'guru') loadGuru();
                 if(requiredReload === 'admin') loadAdmin();
-                Swal.fire('Terhapus', 'Profil user telah dihapus.', 'success');
-            });
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'User dihapus', showConfirmButton: false, timer: 1500 });
+            }).catch(err => Swal.fire('Gagal', err.message, 'error'));
         }
     });
 }
@@ -419,59 +395,120 @@ function showImportSiswaModal() {
 
 let excelDataReady = [];
 
-function previewExcelSiswa(event) {
+// Normalize JK: berbagai format teks → 'L' atau 'P'
+function normalizeJK(raw) {
+    const v = String(raw || '').toLowerCase().trim().replace(/[-_\s]+/g, '');
+    if (['l','lakilaki','laki','male','m','1','pria'].includes(v)) return 'L';
+    if (['p','perempuan','wanita','female','f','0','cewek'].includes(v)) return 'P';
+    return 'L'; // default
+}
+
+async function previewExcelSiswa(event) {
     const file = event.target.files[0];
     if(!file) return;
+
+    // Load rombel dari Firestore untuk pencocokan nama
+    const rombelSnap = await db.collection('rombel').get();
+    const rombelData = []; // [{id, nama}]
+    rombelSnap.forEach(d => rombelData.push({ id: d.id, nama: String(d.data().nama || '').toLowerCase().trim() }));
+
+    function findRombel(namaExcel) {
+        const key = String(namaExcel || '').toLowerCase().trim();
+        return rombelData.find(r => r.nama === key) || null;
+    }
 
     const reader = new FileReader();
     reader.onload = function(e) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-        
-        let validCount = 0;
+
+        const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+        if (rawRows.length < 2) {
+            Swal.fire('File Kosong', 'File Excel tidak memiliki data.', 'error');
+            return;
+        }
+
+        // Normalize header
+        const headers = rawRows[0].map(h => String(h).toLowerCase().trim().replace(/[\s.]/g, ''));
+
+        function getCol(row, ...keys) {
+            for (const k of keys) {
+                const idx = headers.indexOf(k.toLowerCase().replace(/[\s.]/g, ''));
+                if (idx !== -1 && row[idx] !== undefined && String(row[idx]).trim() !== '') {
+                    return String(row[idx]).trim();
+                }
+            }
+            return '';
+        }
+
+        let validCount = 0, warnCount = 0;
         let htmlPreview = '';
         excelDataReady = [];
 
-        jsonData.forEach(row => {
-            // Cek kolom minimal
-            if(row.nama_lengkap && row.kelas && row.username && row.password) {
-                excelDataReady.push({
-                    nama: row.nama_lengkap,
-                    rombelNama: row.kelas,
-                    kelamin: row.jenis_kelamin || 'L',
-                    nis: row.nis || '',
-                    hp: row.nomor_hp || '',
-                    email: row.email || `${row.username}@cbtsafe.local`,
-                    username: row.username,
-                    password: row.password,
-                    role: 'siswa'
-                });
-                
-                if (validCount < 100) { // Tampilkan 100 baris pertama di preview
-                    htmlPreview += `
-                        <tr>
-                            <td>${row.nama_lengkap}</td>
-                            <td>${row.kelas}</td>
-                            <td>${row.jenis_kelamin || ''}</td>
-                            <td>${row.nis || ''}</td>
-                            <td>${row.email || ''}</td>
-                            <td>${row.username}</td>
-                        </tr>
-                    `;
-                }
-                validCount++;
+        for (let i = 1; i < rawRows.length; i++) {
+            const row = rawRows[i];
+            if (row.every(c => c === '' || c === undefined)) continue;
+
+            const rombelRaw = getCol(row, 'Rombel', 'rombel', 'kelas', 'Kelas');
+            const nama      = getCol(row, 'Nama', 'nama_lengkap', 'namalengkap');
+            const username  = getCol(row, 'Username', 'username');
+            const password  = getCol(row, 'Password', 'password');
+
+            if (!rombelRaw || !nama || !username || !password) continue;
+
+            // Cari rombel di Firestore
+            const rombelMatch = findRombel(rombelRaw);
+            const rombelId    = rombelMatch ? rombelMatch.id : '';
+            const rombelNama  = rombelRaw; // tampilkan nama asli dari Excel
+
+            // Normalize JK
+            const jkRaw  = getCol(row, 'JK', 'jenis_kelamin', 'jeniskelamin', 'gender');
+            const jk     = normalizeJK(jkRaw);
+
+            const nis    = getCol(row, 'NIS', 'nis');
+            const email  = getCol(row, 'Email', 'email') || '';
+            const noHp   = getCol(row, 'NO.HP', 'nohp', 'nomor_hp', 'nomorhp', 'hp', 'telepon');
+
+            if (!rombelMatch) warnCount++;
+
+            excelDataReady.push({
+                nama, rombelNama, rombelId, kelamin: jk,
+                nis, hp: noHp, email, username, password, role: 'siswa'
+            });
+
+            if (validCount < 200) {
+                const rombelBadge = rombelMatch
+                    ? `<span class="badge bg-success-subtle text-success border">${rombelRaw}</span>`
+                    : `<span class="badge bg-danger-subtle text-danger border" title="Rombel tidak ditemukan di database"><i class="bi bi-exclamation-triangle me-1"></i>${rombelRaw}</span>`;
+                const emailBadge = email || '<span class="badge bg-secondary-subtle text-muted border">-</span>';
+                htmlPreview += `
+                    <tr>
+                        <td>${nama}</td>
+                        <td>${rombelBadge}</td>
+                        <td><span class="badge ${jk==='L'?'bg-info-subtle text-info':'bg-pink-subtle text-danger'} border">${jk}</span></td>
+                        <td>${nis || '-'}</td>
+                        <td class="text-muted small">${emailBadge}</td>
+                        <td>${username}</td>
+                    </tr>
+                `;
             }
-        });
+            validCount++;
+        }
 
         document.getElementById("previewCount").textContent = validCount;
-        if(validCount > 0) {
+        if (validCount > 0) {
             document.getElementById("importPreviewArea").classList.remove("d-none");
             document.getElementById("importPreviewTable").innerHTML = htmlPreview;
             document.getElementById("btnProsesImportSiswa").disabled = false;
+            if (warnCount > 0) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'warning',
+                    title: `${warnCount} rombel tidak ditemukan`,
+                    text: 'Siswa tetap diimport tapi tanpa rombel ID. Periksa badge merah di preview.',
+                    showConfirmButton: false, timer: 5000 });
+            }
         } else {
-            Swal.fire('Format Salah', 'Data valid tidak ditemukan. Pastikan header kolom excel sama persis dengan instruksi.', 'error');
+            Swal.fire('Format Salah', 'Data valid tidak ditemukan. Pastikan kolom: <b>Rombel, Nama, Username, Password</b> terisi.', 'error');
             document.getElementById("importPreviewArea").classList.add("d-none");
             document.getElementById("btnProsesImportSiswa").disabled = true;
         }
@@ -479,42 +516,49 @@ function previewExcelSiswa(event) {
     reader.readAsArrayBuffer(file);
 }
 
+
 // Untuk mass-create kita gunakan Batch Document Writing di Firestore.
 // Namun perlu dicatat: kita tidak bisa bulk insert "Firebase Authentication Users" melalui frontend SDK.
 // User yang login tidak bisa dibuat batchly. Oleh karena ini frontend-only, kita simpan plain-text pass dan handle custom login via rule if exist.
 // (Disarankan pindah ke Cloud Function admin sdk di sistem prod)
 async function prosesImportSiswa() {
     if(excelDataReady.length === 0) return;
-    
+
     document.getElementById("btnProsesImportSiswa").disabled = true;
     document.getElementById("btnProsesImportSiswa").innerHTML = `<div class="spinner-border spinner-border-sm me-2"></div> Memproses...`;
 
     try {
-        const batch = db.batch();
+        // Firestore batch max 500 docs — split jika perlu
+        const chunks = [];
+        for (let i = 0; i < excelDataReady.length; i += 490) {
+            chunks.push(excelDataReady.slice(i, i + 490));
+        }
+
         let addedCount = 0;
-        
-        // Peringatan Keamanan Firebase Frontend!
-        // Di aplikasi asli, buat user harus lewat Backend Admin SDK. Di sini kita membuat doc untuk validasi `custom login logic`.
-        excelDataReady.forEach(user => {
-            const newRef = db.collection("users").doc();
-            batch.set(newRef, {
-                nama: user.nama,
-                rombelNama: user.rombelNama,
-                jenisKelamin: user.kelamin,
-                nis: user.nis,
-                hp: user.hp,
-                email: user.email,
-                username: user.username,
-                passwordPlain: user.password, // Only strictly needed since no backend auth API
-                role: 'siswa',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        for (const chunk of chunks) {
+            const batch = db.batch();
+            chunk.forEach(user => {
+                const newRef = db.collection("users").doc();
+                batch.set(newRef, {
+                    nama: user.nama,
+                    rombelNama: user.rombelNama,
+                    rombelId: user.rombelId || '',
+                    jenisKelamin: user.kelamin,
+                    nis: user.nis || '',
+                    hp: user.hp || '',
+                    email: user.email || '',
+                    username: user.username,
+                    passwordPlain: user.password,
+                    role: 'siswa',
+                    isOnline: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                addedCount++;
             });
-            addedCount++;
-        });
+            await batch.commit();
+        }
 
-        await batch.commit();
-
-        Swal.fire('Import Berhasil', `${addedCount} data siswa berhasil diimport. Pendaftaran autentikasi tertulis berhasil.`, 'success');
+        Swal.fire('Import Berhasil! 🎉', `${addedCount} siswa berhasil diimport.`, 'success');
         mImport.hide();
         loadSiswa();
     } catch(err) {
@@ -598,34 +642,61 @@ async function handleSaveRombel(e) {
     const id = document.getElementById("rombelId").value;
     const nama = document.getElementById("rombelNama").value;
     const waliId = document.getElementById("rombelWaliKelas").value;
-    
+
     let waliNama = "";
     if(waliId) {
         const wl = guruList.find(g => g.id === waliId);
         if(wl) {
-            const prefix = wl.jenisKelamin === 'P' ? 'Ibu ' : (wl.jenisKelamin === 'L' ? 'Bapak ' : ''); 
+            const prefix = wl.jenisKelamin === 'P' ? 'Ibu ' : (wl.jenisKelamin === 'L' ? 'Bapak ' : '');
             waliNama = `${prefix}${wl.nama}`;
         }
     }
 
     try {
+        // --- Ambil data rombel lama untuk deteksi perubahan wali kelas ---
+        let oldWaliId = null;
+        if(id) {
+            const oldDoc = await db.collection("rombel").doc(id).get();
+            if(oldDoc.exists) oldWaliId = oldDoc.data().waliKelasId || null;
+        }
+
+        // --- Simpan / Update Rombel ---
         if(id) {
             await db.collection("rombel").doc(id).update({
-                nama: nama,
-                waliKelasId: waliId,
-                waliKelasNama: waliNama
+                nama, waliKelasId: waliId, waliKelasNama: waliNama
             });
         } else {
             await db.collection("rombel").add({
-                nama: nama,
-                waliKelasId: waliId,
-                waliKelasNama: waliNama,
+                nama, waliKelasId: waliId, waliKelasNama: waliNama,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }
+
+        // --- Sync user doc guru (agar tabel guru menampilkan wali otomatis) ---
+        const batch = db.batch();
+
+        // Jika wali lama diganti / dihapus → clear data rombelnya
+        if(oldWaliId && oldWaliId !== waliId) {
+            const oldGuruRef = db.collection("users").doc(oldWaliId);
+            batch.update(oldGuruRef, { rombelId: "", rombelNama: "" });
+        }
+
+        // Set data rombel ke user guru yang baru dipilih
+        if(waliId) {
+            const newGuruRef = db.collection("users").doc(waliId);
+            batch.update(newGuruRef, { rombelId: id || "", rombelNama: nama });
+        }
+
+        await batch.commit();
+
         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Rombel tersimpan', showConfirmButton: false, timer: 1500 });
         mRombel.hide();
         loadRombel();
+        // Refresh tabel guru jika sedang terbuka
+        if(document.getElementById('page-guru') && !document.getElementById('page-guru').classList.contains('d-none')) {
+            loadGuru();
+        }
+
     } catch(err) {
         Swal.fire('Gagal Menyimpan', err.message, 'error');
     }

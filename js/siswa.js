@@ -96,8 +96,11 @@ async function handleGantiPassword() {
     if(newPass.length < 6) return Swal.fire('Error', 'Password minimal 6 karakter', 'error');
 
     try {
-        const user = firebase.auth().currentUser;
-        await user.updatePassword(newPass);
+        const user = getUserLocal();
+        if (!user || !user.uid) {
+            return Swal.fire('Error', 'Sesi tidak ditemukan. Silakan login ulang.', 'error');
+        }
+        await db.collection("users").doc(user.uid).update({ passwordPlain: newPass });
         Swal.fire('Berhasil!', 'Password akun Anda telah diperbarui.', 'success');
         mChangePass.hide();
     } catch (err) {

@@ -308,6 +308,36 @@ function startTimer() {
     timerInterval = setInterval(tick, 1000);
 }
 
+/**
+ * Bunyi alarm menggunakan Web Audio API (tidak perlu file audio eksternal)
+ * Akan berbunyi 3 kali beep keras saat pelanggaran ke-3
+ */
+function playAlarm() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const beepCount = 3;
+        const beepDuration = 0.35;
+        const beepInterval = 0.5;
+
+        for (let i = 0; i < beepCount; i++) {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(880, ctx.currentTime + i * beepInterval);
+            gainNode.gain.setValueAtTime(0.8, ctx.currentTime + i * beepInterval);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * beepInterval + beepDuration);
+            osc.start(ctx.currentTime + i * beepInterval);
+            osc.stop(ctx.currentTime + i * beepInterval + beepDuration);
+        }
+        // Close context after all beeps done
+        setTimeout(() => ctx.close(), beepCount * beepInterval * 1000 + 500);
+    } catch(e) {
+        console.warn('Audio API not supported:', e);
+    }
+}
+
 function initKIPS() {
     // 1. Minta Fullscreen perlahan jika diklik area mana saja, 
     // karena browser butuh user interaction untuk requestFullscreen.
@@ -325,7 +355,7 @@ function initKIPS() {
             tabSwitchCount++;
             document.getElementById("kipsOverlay").classList.remove("d-none");
             
-            // Log ke firestore log aktivitas kecurangan (opsional, tapi berguna)
+            // Log ke firestore
             const user = getUserLocal();
             db.collection("logs").add({
                 userId: user.uid,
@@ -339,6 +369,26 @@ function initKIPS() {
             if(activeHasilUjianId) {
                 db.collection("hasilUjian").doc(activeHasilUjianId).update({
                     pelanggaranTab: tabSwitchCount
+                });
+            }
+
+            // ==========================================================
+            // ALARM berbunyi tepat di pelanggaran ke-3!
+            // ==========================================================
+            if(tabSwitchCount === 3) {
+                playAlarm();
+                Swal.fire({
+                    title: '⚠️ PERINGATAN KERAS!',
+                    html: '<b>Ini pelanggaran ke-3!</b><br>Keluar lagi akan menyebabkan ujian otomatis dihentikan!',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Saya Mengerti',
+                    allowOutsideClick: false
+                }).then(() => {
+                    document.getElementById("kipsOverlay").classList.add("d-none");
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(e => {});
+                    }
                 });
             }
             
