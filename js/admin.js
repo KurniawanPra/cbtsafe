@@ -21,9 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
     mAdmin = new bootstrap.Modal(document.getElementById('modalAdmin'));
     mRombel = new bootstrap.Modal(document.getElementById('modalRombel'));
     mImport = new bootstrap.Modal(document.getElementById('modalImportSiswa'));
-    
     // Initial Load
     loadDashboardStats();
+    startUiClock("uiClockAdmin");
     
     // Event Listeners
     document.getElementById("siswaForm").addEventListener("submit", handleSaveSiswa);
@@ -993,4 +993,134 @@ function loadMonitor() {
         });
         document.getElementById("monitorTableBody").innerHTML = html || '<tr><td colspan="4" class="text-center">Semua user offline</td></tr>';
     });
+}
+
+// ---------------------------------------------------------
+// UI CLOCK UTILITY
+// ---------------------------------------------------------
+function startUiClock(elementId) {
+    const el = document.getElementById(elementId);
+    if(!el) return;
+    setInterval(() => {
+        const now = new Date();
+        const str = now.toLocaleTimeString('id-ID', { hour12: false });
+        el.textContent = str;
+    }, 1000);
+}
+
+// ---------------------------------------------------------
+// MONITORING & LOGS
+// ---------------------------------------------------------
+let unsubAdminOnline = null;
+
+function loadMonitor() {
+    const listEl = document.getElementById("onlineUsersList");
+    const countEl = document.getElementById("countOnlineCard");
+    if(!listEl || !countEl) return;
+    
+    if(unsubAdminOnline) { unsubAdminOnline(); unsubAdminOnline = null; }
+    addSystemLog('INFO', 'Memulai monitoring siswa aktif seluruh sekolah...');
+
+    unsubAdminOnline = db.collection("hasilUjian")
+        .where("status", "==", "Mengerjakan")
+        .onSnapshot(snapshot => {
+            const count = snapshot.size;
+            countEl.textContent = count;
+            
+            if(count === 0) {
+                listEl.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Tidak ada siswa ujian aktif</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                const kips = d.pelanggaranTab || 0;
+                const kipsColor = kips >= 3 ? 'danger' : kips >= 1 ? 'warning' : 'success';
+                html += `
+                    <tr>
+                        <td class="align-middle">
+                            <i class="bi bi-person-fill text-primary me-1"></i>
+                            <strong>${d.siswaNama || 'N/A'}</strong>
+                        </td>
+                        <td class="align-middle text-muted" style="font-size:0.75rem;">${d.bankNama || '-'}</td>
+                        <td class="align-middle">
+                            <span class="badge bg-${kipsColor} rounded-pill shadow-sm" title="Pelanggaran KIPS">${kips}x KIPS</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            listEl.innerHTML = html;
+            addSystemLog('LIVE', `${count} siswa sedang ujian (Realtime)`);
+        }, err => {
+            addSystemLog('ERROR', 'Gagal memuat monitoring realtime: ' + err.message);
+        });
+
+    // Load recent logs
+    db.collection("logs")
+        .orderBy("timestamp", "desc")
+        .limit(40)
+        .get()
+        .then(snap => {
+            // Kita proses dari yang paling lama ke paling baru jika ingin menambahkan di bawah, 
+            // tapi addSystemLog kita prepend, jadi kita proses data normal saja.
+            snap.forEach(doc => {
+                const d = doc.data();
+                const ts = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleTimeString('id-ID') : "--:--";
+                const msg = formatLogMessage(d);
+                addSystemLog(d.action || 'LOG', msg, false, ts);
+            });
+        });
+}
+
+/**
+ * Memetakan aksi log menjadi kalimat manusiawi
+ */
+function formatLogMessage(d) {
+    const nama = d.nama || d.userId?.substring(0,8) || 'User';
+    const kode = d.bankKode || '';
+    const score = d.nilaiPG !== undefined ? ` (Skor: ${d.nilaiPG})` : '';
+    const count = d.count ? ` (${d.count}x)` : '';
+
+    switch(d.action) {
+        case 'LOGIN': return `<strong>${nama}</strong> telah masuk ke sistem`;
+        case 'LOGOUT': return `<strong>${nama}</strong> telah keluar dari sistem`;
+        case 'MULAI_UJIAN': return `<strong>${nama}</strong> mulai mengerjakan [${kode}]`;
+        case 'SELESAI_UJIAN': return `<strong>${nama}</strong> selesai mengerjakan [${kode}]${score}`;
+        case 'TAB_SWITCH': return `<strong>${nama}</strong> terdeteksi pindah tab${count}`;
+        default: return `<strong>${nama}</strong> — ${d.action || 'Aktivitas'}`;
+    }
+}
+
+function addSystemLog(type, message, prepend = true, customTime = null) {
+    const box = document.getElementById("systemLogBox");
+    if(!box) return;
+
+    const colors = { 
+        'ERROR': '#f38ba8', 'WARN': '#fab387', 'INFO': '#89dceb', 
+        'LIVE': '#a6e3a1', 'LOG': '#cdd6f4', 'TAB_SWITCH': '#f9e2af',
+        'LOGIN': '#cba6f7', 'LOGOUT': '#eba0ac', 'MULAI_UJIAN': '#a6e3a1', 'SELESAI_UJIAN': '#89b4fa'
+    };
+    const color = colors[type] || '#cdd6f4';
+    const time = customTime || new Date().toLocaleTimeString('id-ID');
+    
+    const entry = document.createElement('div');
+    entry.style.borderBottom = '1px solid #313244';
+    entry.style.padding = '4px 0';
+    entry.style.fontSize = '0.85rem';
+    entry.innerHTML = `<span style="color:#6c7086;">[${time}]</span> <span style="color:${color};font-weight:bold;display:inline-block;width:110px;">[${type}]</span> <span>${message}</span>`;
+    
+    if(prepend && box.firstChild) {
+        box.insertBefore(entry, box.firstChild);
+    } else {
+        box.appendChild(entry);
+    }
+    
+    // Limit log entries to 60
+    while(box.children.length > 60) box.removeChild(box.lastChild);
+}
+
+function clearSystemLog() {
+    const box = document.getElementById("systemLogBox");
+    if(box) box.innerHTML = '<span style="color:#6c7086;">[System] Log dibersihkan.</span>';
 }

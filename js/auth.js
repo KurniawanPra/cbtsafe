@@ -126,6 +126,13 @@ function logout() {
     const user = getUserLocal();
     const loginPath = getLoginPath();
     if (user && user.uid) {
+        db.collection('logs').add({
+            action: 'LOGOUT',
+            userId: user.uid,
+            nama: user.nama || 'User',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
         updateOnlineStatus(user.uid, false).catch(() => {}).finally(() => {
             _clearSession();
         });

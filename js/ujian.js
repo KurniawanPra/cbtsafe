@@ -83,6 +83,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
             const addedDoc     = await db.collection("hasilUjian").add(payloadAwal);
             activeHasilUjianId = addedDoc.id;
+
+            // SYSTEM LOG: Ujian Dimulai
+            await db.collection("logs").add({
+                action: 'MULAI_UJIAN',
+                userId: user.uid,
+                nama: user.nama,
+                penugasanId: examData.penugasanId,
+                bankKode: examData.bankKode || bankData.kode,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
         } else {
             activeHasilUjianId = cekHasil.docs[0].id;
         }
@@ -399,6 +409,7 @@ function initKIPS() {
             const user = getUserLocal();
             db.collection("logs").add({
                 userId:      user.uid,
+                nama:        user.nama,
                 penugasanId: examData.penugasanId,
                 action:      "TAB_SWITCH",
                 count:       tabSwitchCount,
@@ -552,6 +563,17 @@ async function prosesSubmit(reason) {
         } else {
             await db.collection("hasilUjian").add(payload);
         }
+
+        // SYSTEM LOG: Ujian Selesai
+        await db.collection("logs").add({
+            action: 'SELESAI_UJIAN',
+            userId: user.uid,
+            nama: user.nama,
+            penugasanId: examData.penugasanId,
+            bankKode: examData.bankKode || bankData.kode,
+            nilaiPG: nilaiPG,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
         sessionStorage.removeItem("cbt_active_exam");
 

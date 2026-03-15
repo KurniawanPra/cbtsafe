@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(elImport) mImport = new bootstrap.Modal(elImport);
 
     loadDashboardStats();
+    startUiClock("uiClockGuru");
 
     const fBank = document.getElementById("bankForm");
     if(fBank) fBank.addEventListener("submit", handleBankForm);
@@ -176,23 +177,24 @@ function loadOnlineMonitoring() {
                 return;
             }
             
-            let html = '<ul class="list-group list-group-flush">';
+            let html = '';
             snapshot.forEach(doc => {
                 const d = doc.data();
                 const kips = d.pelanggaranTab || 0;
                 const kipsColor = kips >= 3 ? 'danger' : kips >= 1 ? 'warning' : 'success';
                 html += `
-                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                        <div>
+                    <tr>
+                        <td class="align-middle">
                             <i class="bi bi-person-fill text-primary me-1"></i>
                             <strong>${d.siswaNama || 'N/A'}</strong>
-                            <div class="text-muted" style="font-size:0.75rem;">${d.bankNama || ''}</div>
-                        </div>
-                        <span class="badge bg-${kipsColor} rounded-pill" title="Pelanggaran KIPS">${kips}x KIPS</span>
-                    </li>
+                        </td>
+                        <td class="align-middle text-muted" style="font-size:0.75rem;">${d.bankNama || '-'}</td>
+                        <td class="align-middle">
+                            <span class="badge bg-${kipsColor} rounded-pill shadow-sm" title="Pelanggaran KIPS">${kips}x KIPS</span>
+                        </td>
+                    </tr>
                 `;
             });
-            html += '</ul>';
             listEl.innerHTML = html;
             
             addSystemLog('LIVE', `${count} siswa sedang mengerjakan ujian`);
@@ -209,24 +211,48 @@ function loadOnlineMonitoring() {
             snap.forEach(doc => {
                 const d = doc.data();
                 const ts = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleTimeString('id-ID') : "--:--";
-                addSystemLog(d.action || 'LOG', `[${ts}] ${d.userId?.substring(0,8)}... — ${d.action} (${d.count ?? ''})`, false);
+                const msg = formatLogMessage(d);
+                addSystemLog(d.action || 'LOG', msg, false, ts);
             });
         });
 }
 
-function addSystemLog(type, message, prepend = true) {
+/**
+ * Memetakan aksi log menjadi kalimat manusiawi
+ */
+function formatLogMessage(d) {
+    const nama = d.nama || d.userId?.substring(0,8) || 'User';
+    const kode = d.bankKode || '';
+    const score = d.nilaiPG !== undefined ? ` (Skor: ${d.nilaiPG})` : '';
+    const count = d.count ? ` (${d.count}x)` : '';
+
+    switch(d.action) {
+        case 'LOGIN': return `<strong>${nama}</strong> telah masuk ke sistem`;
+        case 'LOGOUT': return `<strong>${nama}</strong> telah keluar dari sistem`;
+        case 'MULAI_UJIAN': return `<strong>${nama}</strong> mulai mengerjakan [${kode}]`;
+        case 'SELESAI_UJIAN': return `<strong>${nama}</strong> selesai mengerjakan [${kode}]${score}`;
+        case 'TAB_SWITCH': return `<strong>${nama}</strong> terdeteksi pindah tab${count}`;
+        default: return `<strong>${nama}</strong> — ${d.action || 'Aktivitas'}`;
+    }
+}
+
+function addSystemLog(type, message, prepend = true, customTime = null) {
     const box = document.getElementById("systemLogBox");
     if(!box) return;
     
-    const colors = { 'ERROR': '#f38ba8', 'WARN': '#fab387', 'INFO': '#89dceb', 'LIVE': '#a6e3a1', 'LOG': '#cdd6f4', 'TAB_SWITCH': '#f9e2af' };
+    const colors = { 
+        'ERROR': '#f38ba8', 'WARN': '#fab387', 'INFO': '#89dceb', 
+        'LIVE': '#a6e3a1', 'LOG': '#cdd6f4', 'TAB_SWITCH': '#f9e2af',
+        'LOGIN': '#cba6f7', 'LOGOUT': '#eba0ac', 'MULAI_UJIAN': '#a6e3a1', 'SELESAI_UJIAN': '#89b4fa'
+    };
     const color = colors[type] || '#cdd6f4';
-    const time = new Date().toLocaleTimeString('id-ID');
+    const time = customTime || new Date().toLocaleTimeString('id-ID');
     
     const entry = document.createElement('div');
     entry.style.borderBottom = '1px solid #313244';
-    entry.style.paddingBottom = '2px';
-    entry.style.marginBottom = '2px';
-    entry.innerHTML = `<span style="color:#6c7086;">[${time}]</span> <span style="color:${color};font-weight:bold;">[${type}]</span> <span>${message}</span>`;
+    entry.style.padding = '4px 0';
+    entry.style.fontSize = '0.85rem';
+    entry.innerHTML = `<span style="color:#6c7086;">[${time}]</span> <span style="color:${color};font-weight:bold;display:inline-block;width:110px;">[${type}]</span> <span>${message}</span>`;
     
     if(prepend && box.firstChild) {
         box.insertBefore(entry, box.firstChild);
@@ -305,6 +331,7 @@ function loadBankSoal() {
 function showBankModal() {
     document.getElementById("bankForm").reset();
     document.getElementById("bankId").value = "";
+    document.getElementById("bankBatasRemedial").value = "";
     document.getElementById("modalBankTitle").textContent = "Buat Bank Soal Baru";
     mBank.show();
 }
@@ -317,6 +344,7 @@ function editBank(id) {
     document.getElementById("bankKode").value = data.kode;
     document.getElementById("bankNama").value = data.nama;
     document.getElementById("bankDeskripsi").value = data.deskripsi;
+    document.getElementById("bankBatasRemedial").value = data.batasRemedial || "";
     document.getElementById("modalBankTitle").textContent = "Edit Informasi Bank Soal";
 
     mBank.show();
@@ -328,9 +356,10 @@ async function handleBankForm(e) {
     const kode = document.getElementById("bankKode").value;
     const nama = document.getElementById("bankNama").value;
     const deskripsi = document.getElementById("bankDeskripsi").value;
+    const batasRemedial = Number(document.getElementById("bankBatasRemedial").value || 0);
 
     const payload = {
-        kode, nama, deskripsi,
+        kode, nama, deskripsi, batasRemedial,
         guruId: getUserLocal().uid,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -875,6 +904,7 @@ async function handleTugasForm(e) {
         bankId: bankId,
         bankKode: b.kode,
         bankNama: b.nama,
+        batasRemedial: b.batasRemedial || 0,
         semester: document.getElementById("tugasSemester").value,
         jenis: document.getElementById("tugasJenis").value,
         durasi: parseInt(document.getElementById("tugasDurasi").value),
@@ -951,6 +981,18 @@ function deleteTugas(id) {
 // HASIL (NILAI) & ROMBEL CARDS
 // ---------------------------------------------------------
 let activeRombelIdHasil = null;
+let currentSortOrderHasil = 'asc';
+
+function toggleSortNama() {
+    currentSortOrderHasil = currentSortOrderHasil === 'asc' ? 'desc' : 'asc';
+    const icon = document.getElementById('iconSortNama');
+    if(icon) {
+        icon.className = currentSortOrderHasil === 'asc' 
+            ? 'bi bi-sort-alpha-down text-primary ms-1' 
+            : 'bi bi-sort-alpha-up-alt text-primary ms-1';
+    }
+    loadHasilByRombel();
+}
 
 function loadHasilRombelCards() {
     const container = document.getElementById("hasilRombelCards");
@@ -991,6 +1033,7 @@ function showHasilRombelCards() {
     activeRombelIdHasil = null;
     document.getElementById("hasilTitle").textContent = "Hasil Ujian: Pilih Rombel";
     document.getElementById("hasilFilterAction").classList.add("d-none");
+    document.getElementById("hasilFilterAction").classList.remove("d-flex");
     document.getElementById("hasilTabelCard").classList.add("d-none");
     document.getElementById("hasilRombelCards").classList.remove("d-none");
     loadHasilRombelCards();
@@ -1001,6 +1044,7 @@ function openRombelHasil(rombelId, rombelNama) {
     document.getElementById("hasilTitle").textContent = `Hasil Ujian: ${rombelNama}`;
     document.getElementById("hasilRombelCards").classList.add("d-none");
     document.getElementById("hasilFilterAction").classList.remove("d-none");
+    document.getElementById("hasilFilterAction").classList.add("d-flex");
     document.getElementById("hasilTabelCard").classList.remove("d-none");
     
     // Reset dropdown and table
@@ -1051,6 +1095,15 @@ async function loadHasilByRombel() {
             listSiswa.push({ id: s.id, nama: s.data().nama });
         });
         
+        // SORTING NAMA
+        listSiswa.sort((a, b) => {
+            const nameA = (a.nama || "").toUpperCase();
+            const nameB = (b.nama || "").toUpperCase();
+            if (nameA < nameB) return currentSortOrderHasil === 'asc' ? -1 : 1;
+            if (nameA > nameB) return currentSortOrderHasil === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
         // Ambil hasil ujian di penugasan ini
         const hasilSnap = await db.collection("hasilUjian")
             .where("penugasanId", "==", tugasId)
@@ -1061,6 +1114,25 @@ async function loadHasilByRombel() {
             const data = h.data();
             dictHasil[data.siswaId] = Object.assign(data, { docId: h.id });
         });
+        
+        // Ambil data penugasan untuk batasRemedial
+        const penugasanSnap = await db.collection("penugasan").doc(tugasId).get();
+        let batasRemedial = 0;
+        if(penugasanSnap.exists) {
+            const pData = penugasanSnap.data();
+            batasRemedial = Number(pData.batasRemedial || 0);
+            
+            // Priority: Ambil nilai batasRemedial LANGSUNG dari Bank Soal terbaru
+            if(pData.bankId) {
+                const bankSnap = await db.collection("bankSoal").doc(pData.bankId).get();
+                if(bankSnap.exists && bankSnap.data().batasRemedial !== undefined) {
+                    batasRemedial = Number(bankSnap.data().batasRemedial);
+                }
+            }
+        }
+        
+        let remedialCount = 0;
+        let remedialIds = [];
         
         // Render Gabungan (Semua Siswa Rombel)
         let html = '';
@@ -1087,10 +1159,27 @@ async function loadHasilByRombel() {
                 const nilaiEssay = hasil.nilaiEssay;
                 const nilaiAkhir = hasil.nilaiAkhir;
                 
-                // Threshold kelulusan pada nilai akhir 60
+                // Threshold kelulusan pada nilai akhir 60 -> now uses batasRemedial
+                const nilaiCheck = nilaiAkhir !== null && nilaiAkhir !== undefined ? Number(nilaiAkhir) : Number(nilaiPG);
+                const isRemedial = nilaiCheck < batasRemedial;
+                
+                if(hasil.status === 'Selesai' && isRemedial) {
+                    remedialCount++;
+                    remedialIds.push(hasil.docId);
+                }
+                
                 const scoreClassAkhir = (nilaiAkhir !== null && nilaiAkhir !== undefined)
-                    ? (nilaiAkhir >= 60 ? 'text-success' : 'text-danger')
+                    ? (Number(nilaiAkhir) >= batasRemedial ? 'text-success' : 'text-danger')
                     : '';
+                
+                let limitBadge = '';
+                if(hasil.status === 'Selesai') {
+                    if(isRemedial) {
+                        limitBadge = `<span class="badge bg-danger ms-1">Remedial</span>`;
+                    } else {
+                        limitBadge = `<span class="badge bg-success ms-1">Lulus</span>`;
+                    }
+                }
                 
                 let statusBadge = '';
                 if(hasil.status === 'Selesai') statusBadge = 'bg-success';
@@ -1101,17 +1190,21 @@ async function loadHasilByRombel() {
                 
                 let actionBtns = '';
                 if(hasil.status === 'Selesai' || hasil.status === 'Menunggu Koreksi') {
-                     actionBtns += `<button class="btn btn-sm btn-outline-primary me-1" onclick="koreksiEssay('${hasil.docId}')" title="Koreksi Essay"><i class="bi bi-pencil-square"></i> Koreksi</button>`;
-                     actionBtns += `<button class="btn btn-sm btn-outline-danger" onclick="resetUjianSiswa('${hasil.docId}')" title="Reset Total"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>`;
+                     actionBtns += `<button class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="koreksiEssay('${hasil.docId}')" title="Koreksi Essay"><i class="bi bi-pencil-square"></i> Koreksi</button>`;
+                     if(hasil.status === 'Selesai' && isRemedial) {
+                         actionBtns += `<button class="btn btn-sm btn-danger mb-1" onclick="resetUjianSiswa('${hasil.docId}', true)" title="Beri Remedial"><i class="bi bi-arrow-repeat"></i> Beri Remedial</button>`;
+                     } else {
+                         actionBtns += `<button class="btn btn-sm btn-outline-danger mb-1" onclick="resetUjianSiswa('${hasil.docId}', false)" title="Reset Total"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>`;
+                     }
                 } else if(hasil.status === 'Mengerjakan' || hasil.status === 'Waktu Habis') {
-                     actionBtns += `<button class="btn btn-sm btn-danger" onclick="resetUjianSiswa('${hasil.docId}')" title="Force Reset"><i class="bi bi-x-circle"></i> Force Reset</button>`;
+                     actionBtns += `<button class="btn btn-sm btn-danger mb-1" onclick="resetUjianSiswa('${hasil.docId}', false)" title="Force Reset"><i class="bi bi-x-circle"></i> Force Reset</button>`;
                 }
 
                 html += `
                     <tr>
-                        <td><strong>${siswa.nama}</strong></td>
+                        <td><strong>${siswa.nama}</strong> ${limitBadge}</td>
                         <td><span class="badge ${statusBadge}">${hasil.status}</span></td>
-                        <td>${nilaiPG}</td>
+                        <td><span class="${nilaiPG < batasRemedial ? 'text-danger fw-bold' : ''}">${nilaiPG}</span></td>
                         <td>${nilaiEssay !== null && nilaiEssay !== undefined ? nilaiEssay + ' / ' + maxEssay : '<span class="text-warning small">Belum dikoreksi</span>'}</td>
                         <td class="fw-bold fs-6 ${scoreClassAkhir}">${nilaiAkhir !== null && nilaiAkhir !== undefined ? nilaiAkhir : '-'}</td>
                         <td>${formatWaktuUjian(hasil.waktuBerapaLama)}</td>
@@ -1124,10 +1217,54 @@ async function loadHasilByRombel() {
         
         body.innerHTML = html;
         
+        const btnRemedial = document.getElementById("btnRemedialMassal");
+        const countB = document.getElementById("countRemedial");
+        if(btnRemedial && countB) {
+            if(remedialCount > 0) {
+                btnRemedial.classList.remove("d-none");
+                countB.textContent = remedialCount;
+                btnRemedial.dataset.ids = JSON.stringify(remedialIds);
+            } else {
+                btnRemedial.classList.add("d-none");
+            }
+        }
+        
     } catch (err) {
         console.error(err);
         body.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Gagal memuat hasil: ${err.message}</td></tr>`;
     }
+}
+
+function beriRemedialMassal() {
+    const btn = document.getElementById("btnRemedialMassal");
+    if(!btn) return;
+    const ids = JSON.parse(btn.dataset.ids || '[]');
+    if(ids.length === 0) return;
+
+    Swal.fire({
+        title: 'Beri Akses Remedial Massal?',
+        text: `Tindakan ini akan mereset ujian untuk ${ids.length} siswa yang statusnya Selesai dan berada di bawah batas remedial.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Beri Remedial Semua',
+        confirmButtonColor: '#0d6efd',
+        cancelButtonText: 'Batal'
+    }).then(async (res) => {
+        if(res.isConfirmed) {
+            Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+            try {
+                const batch = db.batch();
+                ids.forEach(id => {
+                    batch.delete(db.collection("hasilUjian").doc(id));
+                });
+                await batch.commit();
+                Swal.fire('Berhasil', 'Akses remedial diberikan kepada semua siswa terpilih.', 'success');
+                loadHasilByRombel();
+            } catch(e) {
+                Swal.fire('Gagal', e.message, 'error');
+            }
+        }
+    });
 }
 
 function formatWaktuUjian(seconds) {
@@ -1137,19 +1274,27 @@ function formatWaktuUjian(seconds) {
     return `${m} mnt ${s} dtk`;
 }
 
-function resetUjianSiswa(hasilId) {
+function resetUjianSiswa(hasilId, isRemedial = false) {
+    const titleText = isRemedial ? 'Beri Akses Remedial?' : 'Reset Total Ujian Siswa?';
+    const bodyText = isRemedial 
+        ? 'Tindakan ini akan menghapus riwayat pengerjaan siswa saat ini agar mereka bisa MENGAMBIL ULANG UJIAN INI sebagai Remedial.' 
+        : 'Tindakan ini akan MENGHAPUS SELURUH JAWABAN yang sudah dibuat siswa ini untuk penugasan ini. Siswa akan dipaksa mengulang dari awal (jika ujian masih aktif).';
+    const confirmBtn = isRemedial ? 'Ya, Beri Akses Remedial' : 'Ya, Reset Total Pengerjaan';
+    const btnColor = isRemedial ? '#0d6efd' : '#dc3545';
+
     Swal.fire({
-        title: 'Reset Total Ujian Siswa?',
-        text: 'Tindakan ini akan MENGHAPUS SELURUH JAWABAN yang sudah dibuat siswa ini untuk penugasan ini. Siswa akan dipaksa mengulang dari awal (jika ujian masih aktif).',
+        title: titleText,
+        text: bodyText,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Ya, Reset Total Pengerjaan',
-        confirmButtonColor: '#dc3545',
+        confirmButtonText: confirmBtn,
+        confirmButtonColor: btnColor,
         cancelButtonText: 'Batal'
     }).then((res) => {
         if(res.isConfirmed) {
             db.collection("hasilUjian").doc(hasilId).delete().then(() => {
-                Swal.fire('Terhapus', 'Riwayat pengerjaan siswa telah direset dari nol.', 'success');
+                const successMsg = isRemedial ? 'Akses remedial diberikan. Siswa dapat mengerjakan ulang.' : 'Riwayat pengerjaan siswa telah direset dari nol.';
+                Swal.fire('Berhasil', successMsg, 'success');
                 loadHasilByRombel();
             }).catch(err => {
                 Swal.fire('Gagal Reset', err.message, 'error');
@@ -1368,3 +1513,16 @@ window.renderOpsiInputs = renderOpsiInputs;
 window.clearSystemLog = clearSystemLog;
 window.resetUjianSiswa = resetUjianSiswa;
 window.simpanKoreksiTertutup = async () => {}; // Temporary placeholder, will be redefined in koreksiEssay
+
+// ---------------------------------------------------------
+// UI CLOCK UTILITY
+// ---------------------------------------------------------
+function startUiClock(elementId) {
+    const el = document.getElementById(elementId);
+    if(!el) return;
+    setInterval(() => {
+        const now = new Date();
+        const str = now.toLocaleTimeString('id-ID', { hour12: false });
+        el.textContent = str;
+    }, 1000);
+}

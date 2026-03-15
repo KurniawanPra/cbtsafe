@@ -566,6 +566,14 @@
         lastSeen: firebase.firestore.FieldValue.serverTimestamp()
       });
 
+      // SYSTEM LOG: Login
+      await db.collection('logs').add({
+        action: 'LOGIN',
+        userId: docSnap.id,
+        nama: userData.nama,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
       // Redirect sesuai role
       const roleMap = { admin: 'admin/index.html', guru: 'guru/index.html', siswa: 'siswa/index.html' };
       window.location.href = roleMap[userData.role] || 'index.html';
