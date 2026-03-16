@@ -264,23 +264,28 @@
 
                 <!-- MONITORING -->
                 <div id="page-monitor" class="admin-page d-none">
-                    <h3 class="mb-4">Monitoring Online & Log</h3>
+                    <h3 class="mb-4">Monitoring Siswa Ujian</h3>
                     <div class="row">
                         <!-- Siswa Sedang Mengerjakan -->
-                        <div class="col-md-7 mb-4">
-                            <div class="card shadow-sm border-0 h-100">
+                        <div class="col-12 mb-4">
+                            <div class="card shadow-sm border-0">
                                 <div class="card-header bg-primary text-white fw-bold py-2 d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-activity me-2"></i>Siswa Ujian Aktif</span>
-                                    <span class="badge bg-white text-primary" id="countOnlineCard">0</span>
+                                    <span><i class="bi bi-activity me-2"></i>Monitoring Aktif</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <select id="filterRombelMonitor" class="form-select form-select-sm border-0" style="width: 150px;" onchange="loadMonitor()">
+                                            <option value="all">Semua Rombel</option>
+                                        </select>
+                                        <span class="badge bg-white text-primary" id="countOnlineCard">0</span>
+                                    </div>
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="table-responsive" style="max-height: 400px; overflow-y:auto;">
-                                        <table class="table table-hover table-sm mb-0" style="font-size: 0.85rem;">
+                                    <div class="table-responsive" style="max-height: 500px; overflow-y:auto;">
+                                        <table class="table table-hover mb-0">
                                             <thead class="table-light sticky-top">
                                                 <tr>
                                                     <th>Nama & Rombel</th>
                                                     <th>Ujian</th>
-                                                    <th>Status</th>
+                                                    <th>Status / KIPS</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="onlineUsersList">
@@ -288,19 +293,6 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- System Log Box -->
-                        <div class="col-md-5 mb-4">
-                            <div class="card shadow-sm border-0 h-100">
-                                <div class="card-header bg-dark text-white fw-bold py-2 d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-terminal me-2"></i>Log Sistem</span>
-                                    <button class="btn btn-sm btn-outline-light py-0" onclick="clearSystemLog()">Bersihkan</button>
-                                </div>
-                                <div id="systemLogBox" style="max-height:400px; overflow-y:auto; background:#1e1e2e; color:#a6e3a1; font-family:monospace; font-size:0.75rem; padding:10px;">
-                                    <span class="text-muted">[System] Log dimuat...</span>
                                 </div>
                             </div>
                         </div>

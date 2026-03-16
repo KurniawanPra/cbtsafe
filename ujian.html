@@ -357,6 +357,22 @@
 </head>
 <body>
 
+<!-- ===== FULLSCREEN MODAL ===== -->
+<div id="modalFullscreen" class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center py-5">
+                <div class="mb-4" style="font-size: 4rem;">💻</div>
+                <h4 class="fw-bold mb-3">Mode Fullscreen Wajib</h4>
+                <p class="text-muted mb-4">Ujian hanya dapat diakses dalam mode layar penuh (fullscreen) untuk mencegah kecurangan.</p>
+                <button type="button" class="btn btn-primary px-5 py-2 fw-bold" onclick="masukFullscreen()">
+                    MULAI / LANJUTKAN UJIAN
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ===== KIPS OVERLAY ===== -->
 <div id="kipsOverlay" class="kips-overlay d-none">
     <div class="ki-icon">⛔</div>
@@ -398,15 +414,17 @@
                 </div>
             </div>
             <div class="soal-footer">
-                <button class="btn-soal btn-prev-soal" id="btnPrev">
-                    <i class="bi bi-chevron-left"></i> Sebelumnya
-                </button>
-                <button class="btn-soal btn-next-soal" id="btnNext">
-                    Selanjutnya <i class="bi bi-chevron-right"></i>
-                </button>
-                <button class="btn-soal btn-selesai-soal d-none" id="btnSelesai" onclick="submitUjianManual()">
-                    <i class="bi bi-check-circle-fill"></i> Selesai
-                </button>
+                <div class="d-flex gap-2 w-100 align-items-center">
+                    <button class="btn-soal btn-prev-soal px-3" id="btnPrev" title="Sebelumnya">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="btn-soal btn-next-soal px-3" id="btnNext" title="Selanjutnya">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    <button class="btn-soal btn-selesai-soal d-none px-4 ms-auto" id="btnSelesai" onclick="submitUjianManual()">
+                        <i class="bi bi-check-circle-fill"></i> <span class="d-none d-sm-inline ms-1">Selesai</span>
+                    </button>
+                </div>
             </div>
         </div>
 

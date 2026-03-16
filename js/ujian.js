@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     examData   = JSON.parse(activeStr);
     waktuMulai = new Date();
 
+    initFullscreenControl();
     if (examData.kips) initKIPS();
 
     try {
@@ -69,6 +70,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const payloadAwal = {
                 siswaId:         user.uid,
                 siswaNama:       user.nama,
+                rombelId:        user.rombelId || "",
+                rombelNama:      user.rombelNama || "",
                 penugasanId:     examData.penugasanId,
                 bankKode:        examData.bankKode || bankData.kode,
                 bankNama:        bankData.nama,
@@ -95,6 +98,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         } else {
             activeHasilUjianId = cekHasil.docs[0].id;
+            // Update rombel info if missing (for legacy or resumed sessions)
+            const existingData = cekHasil.docs[0].data();
+            if (!existingData.rombelId && user.rombelId) {
+                db.collection("hasilUjian").doc(activeHasilUjianId).update({
+                    rombelId: user.rombelId,
+                    rombelNama: user.rombelNama || ""
+                }).catch(e => console.warn("Gagal update rombel info:", e));
+            }
         }
 
         // Realtime: deteksi reset paksa oleh guru
@@ -390,16 +401,44 @@ function playAlarm() {
 }
 
 // ============================================================
+// FULLSCREEN CONTROL
+// ============================================================
+let mFullscreen;
+
+function initFullscreenControl() {
+    const el = document.getElementById('modalFullscreen');
+    if (el) mFullscreen = new bootstrap.Modal(el);
+
+    if (!document.fullscreenElement) {
+        if(mFullscreen) mFullscreen.show();
+    }
+
+    document.addEventListener("fullscreenchange", () => {
+        if (!document.fullscreenElement) {
+            if(mFullscreen) mFullscreen.show();
+        } else {
+            if(mFullscreen) mFullscreen.hide();
+        }
+    });
+}
+
+function masukFullscreen() {
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(err => {
+            console.error(err);
+        });
+    } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+    } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+    }
+}
+
+// ============================================================
 // KIPS
 // ============================================================
 function initKIPS() {
-    document.body.addEventListener("click", () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.warn("Gagal fullscreen:", err);
-            });
-        }
-    }, { once: true });
 
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === 'hidden') {
@@ -455,9 +494,7 @@ function initKIPS() {
 
 function kembaliKeUjian() {
     document.getElementById("kipsOverlay").classList.add("d-none");
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(e => { console.log(e); });
-    }
+    masukFullscreen();
 }
 
 // ============================================================
@@ -525,6 +562,8 @@ async function prosesSubmit(reason) {
     const payload = {
         siswaId:          user.uid,
         siswaNama:        user.nama,
+        rombelId:         user.rombelId || "",
+        rombelNama:       user.rombelNama || "",
         penugasanId:      examData.penugasanId,
         bankKode:         examData.bankKode || bankData.kode,
         bankNama:         bankData.nama,

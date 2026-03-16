@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function logoutWithSwal() {
     Swal.fire({
         title: 'Keluar Aplikasi?',
-        text: "Anda akan keluar dari sesi CBT SAFE",
+        text: "Anda akan keluar dari sesi ini",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',

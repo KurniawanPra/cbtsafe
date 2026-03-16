@@ -552,12 +552,24 @@
       }
 
       // Login berhasil — simpan sesi di localStorage
+      let rombelNama = '';
+      if (userData.role === 'siswa' && userData.rombelId) {
+          try {
+              const rDoc = await db.collection('rombels').doc(userData.rombelId).get();
+              if (rDoc.exists) rombelNama = rDoc.data().nama;
+          } catch (e) {
+              console.warn("Gagal fetch rombelNama:", e);
+          }
+      }
+
       localStorage.setItem('cbt_user', JSON.stringify({
         uid: docSnap.id,
         nama: userData.nama,
         role: userData.role,
         username: userData.username,
-        rombelId: userData.rombelId || ''
+        rombelId: userData.rombelId || '',
+        rombelNama: rombelNama,
+        loginTime: new Date().getTime()
       }));
 
       // Update status online di Firestore

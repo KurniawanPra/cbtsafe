@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function logoutWithSwal() {
     Swal.fire({
         title: 'Keluar Aplikasi?',
-        text: "Anda akan keluar dari sesi CBT SAFE",
+        text: "Anda akan keluar dari sesi ini",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -159,21 +159,47 @@ function loadDashboardStats() {
 function loadOnlineMonitoring() {
     const listEl = document.getElementById("onlineUsersList");
     const countEl = document.getElementById("countOnline");
+    const filterEl = document.getElementById("filterRombelMonitor");
     if(!listEl || !countEl) return;
     
-    // Unsubscribe previous listener if exists
     if(unsubOnline) { unsubOnline(); unsubOnline = null; }
-    
-    addSystemLog('INFO', 'Memulai monitoring siswa aktif...');
 
-    unsubOnline = db.collection("hasilUjian")
-        .where("status", "==", "Mengerjakan")
+    // Dynamic Filter Builder
+    db.collection("hasilUjian").where("status", "==", "Mengerjakan")
         .onSnapshot(snapshot => {
+            if (!filterEl) return;
+            const currentVal = filterEl.value;
+            const activeRombels = {}; 
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                if (d.rombelId) activeRombels[d.rombelId] = d.rombelNama || d.rombelId;
+            });
+
+            filterEl.innerHTML = '<option value="all">Semua Rombel</option>';
+            Object.keys(activeRombels).sort().forEach(id => {
+                const opt = document.createElement("option");
+                opt.value = id;
+                opt.textContent = activeRombels[id];
+                filterEl.appendChild(opt);
+            });
+            filterEl.value = currentVal;
+            if (filterEl.value === "" && currentVal !== "") {
+                filterEl.value = "all";
+                loadOnlineMonitoring();
+            }
+        });
+    
+    let query = db.collection("hasilUjian").where("status", "==", "Mengerjakan");
+    if (filterEl && filterEl.value !== 'all') {
+        query = query.where("rombelId", "==", filterEl.value);
+    }
+
+    unsubOnline = query.onSnapshot(snapshot => {
             const count = snapshot.size;
             countEl.textContent = count;
             
             if(count === 0) {
-                listEl.innerHTML = '<div class="text-center text-muted py-3"><i class="bi bi-emoji-smile"></i> Tidak ada siswa aktif</div>';
+                listEl.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Tidak ada siswa ujian aktif</td></tr>';
                 return;
             }
             
@@ -186,88 +212,24 @@ function loadOnlineMonitoring() {
                     <tr>
                         <td class="align-middle">
                             <i class="bi bi-person-fill text-primary me-1"></i>
-                            <strong>${d.siswaNama || 'N/A'}</strong>
+                            <strong>${d.siswaNama || 'N/A'}</strong><br>
+                            <small class="text-muted">${d.rombelNama || '-'}</small>
                         </td>
-                        <td class="align-middle text-muted" style="font-size:0.75rem;">${d.bankNama || '-'}</td>
+                        <td class="align-middle text-muted" style="font-size:0.85rem;">${d.bankNama || '-'}</td>
                         <td class="align-middle">
-                            <span class="badge bg-${kipsColor} rounded-pill shadow-sm" title="Pelanggaran KIPS">${kips}x KIPS</span>
+                            <span class="badge bg-primary me-2">Mengerjakan</span>
+                            <span class="badge bg-${kipsColor}-subtle text-${kipsColor} border" title="Pelanggaran KIPS">${kips}x KIPS</span>
                         </td>
                     </tr>
                 `;
             });
             listEl.innerHTML = html;
-            
-            addSystemLog('LIVE', `${count} siswa sedang mengerjakan ujian`);
         }, err => {
-            addSystemLog('ERROR', 'Gagal memuat monitoring: ' + err.message);
-        });
-    
-    // Load recent logs from Firestore
-    db.collection("logs")
-        .orderBy("timestamp", "desc")
-        .limit(30)
-        .get()
-        .then(snap => {
-            snap.forEach(doc => {
-                const d = doc.data();
-                const ts = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleTimeString('id-ID') : "--:--";
-                const msg = formatLogMessage(d);
-                addSystemLog(d.action || 'LOG', msg, false, ts);
-            });
+            console.error('Monitoring error:', err);
         });
 }
 
-/**
- * Memetakan aksi log menjadi kalimat manusiawi
- */
-function formatLogMessage(d) {
-    const nama = d.nama || d.userId?.substring(0,8) || 'User';
-    const kode = d.bankKode || '';
-    const score = d.nilaiPG !== undefined ? ` (Skor: ${d.nilaiPG})` : '';
-    const count = d.count ? ` (${d.count}x)` : '';
-
-    switch(d.action) {
-        case 'LOGIN': return `<strong>${nama}</strong> telah masuk ke sistem`;
-        case 'LOGOUT': return `<strong>${nama}</strong> telah keluar dari sistem`;
-        case 'MULAI_UJIAN': return `<strong>${nama}</strong> mulai mengerjakan [${kode}]`;
-        case 'SELESAI_UJIAN': return `<strong>${nama}</strong> selesai mengerjakan [${kode}]${score}`;
-        case 'TAB_SWITCH': return `<strong>${nama}</strong> terdeteksi pindah tab${count}`;
-        default: return `<strong>${nama}</strong> — ${d.action || 'Aktivitas'}`;
-    }
-}
-
-function addSystemLog(type, message, prepend = true, customTime = null) {
-    const box = document.getElementById("systemLogBox");
-    if(!box) return;
-    
-    const colors = { 
-        'ERROR': '#f38ba8', 'WARN': '#fab387', 'INFO': '#89dceb', 
-        'LIVE': '#a6e3a1', 'LOG': '#cdd6f4', 'TAB_SWITCH': '#f9e2af',
-        'LOGIN': '#cba6f7', 'LOGOUT': '#eba0ac', 'MULAI_UJIAN': '#a6e3a1', 'SELESAI_UJIAN': '#89b4fa'
-    };
-    const color = colors[type] || '#cdd6f4';
-    const time = customTime || new Date().toLocaleTimeString('id-ID');
-    
-    const entry = document.createElement('div');
-    entry.style.borderBottom = '1px solid #313244';
-    entry.style.padding = '4px 0';
-    entry.style.fontSize = '0.85rem';
-    entry.innerHTML = `<span style="color:#6c7086;">[${time}]</span> <span style="color:${color};font-weight:bold;display:inline-block;width:110px;">[${type}]</span> <span>${message}</span>`;
-    
-    if(prepend && box.firstChild) {
-        box.insertBefore(entry, box.firstChild);
-    } else {
-        box.appendChild(entry);
-    }
-    
-    // Limit log entries to 50
-    while(box.children.length > 50) box.removeChild(box.lastChild);
-}
-
-function clearSystemLog() {
-    const box = document.getElementById("systemLogBox");
-    if(box) box.innerHTML = '<span style="color:#6c7086;">[System] Log dibersihkan.</span>';
-}
+// clearSystemLog removed as per user request
 
 function renderTugasDashboard(snapshot) {
     let html = '';

@@ -61,13 +61,22 @@ function checkAuth(requiredRole = null) {
             const userData = doc.data();
 
             // Perbarui localStorage dengan data terbaru
+            const now = new Date().getTime();
             localStorage.setItem("cbt_user", JSON.stringify({
                 uid: user.uid,
                 nama: userData.nama,
                 role: userData.role,
                 username: userData.username,
-                rombelId: userData.rombelId || ""
+                rombelId: userData.rombelId || "",
+                rombelNama: userData.rombelNama || "",
+                loginTime: user.loginTime || now // Pertahankan loginTime lama jika ada
             }));
+
+            // Cek Sesi 1 Hari (24 jam = 86400000 ms)
+            if (user.loginTime && (now - user.loginTime > 86400000)) {
+                _clearSession();
+                return;
+            }
 
             // Redirect guard
             if (requiredRole && userData.role !== requiredRole) {
@@ -104,7 +113,7 @@ function logoutWithSwal() {
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             title: 'Keluar Aplikasi?',
-            text: "Anda akan keluar dari sesi CBT SAFE",
+            text: "Anda akan keluar dari sesi ini",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
